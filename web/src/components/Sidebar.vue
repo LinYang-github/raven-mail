@@ -35,8 +35,8 @@
     <div class="user-info">
       <el-avatar :size="32" icon="UserFilled" />
       <div class="user-details">
-        <div class="name">当前用户</div>
-        <div class="id">user-123</div>
+        <div class="name">{{ userStore.name || '当前用户' }}</div>
+        <div class="id">{{ userStore.id }}</div>
       </div>
     </div>
   </div>
