@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -132,22 +135,52 @@ func (h *MailHandler) GetMail(c *gin.Context) {
 }
 
 func (h *MailHandler) DownloadAttachment(c *gin.Context) {
-	// For simplicity, passing path via query or look up by attachment ID
-	// Ideally we look up Attachment by ID to get the path
-	// Here we assume client knows the path or we fetch it.
-	// Implementation Plan said: /api/v1/mails/:id/attachments/:file_id
-	// So we need to look up attachment first.
-	// But Repository.GetByID preloads attachments.
-	// We can add a method to Repo to GetAttachmentByID.
-	// For now, let's mock it or assume simple path serving if using static file server,
-	// but secure way is streaming via Backend.
-
-	path := c.Query("path") // Insecure demo, should use Attachment ID lookup
-	if path == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Path required"})
+	id := c.Query("id")
+	if id == "" {
+		// Fallback for legacy calls if any (though we are changing the contract)
+		path := c.Query("path")
+		if path != "" {
+			// Legacy insecure mode (deprecated)
+			h.downloadByPath(c, path)
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Attachment ID required"})
 		return
 	}
 
+	att, err := h.service.GetAttachment(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Attachment not found"})
+		return
+	}
+
+	f, err := h.storage.GetFile(c.Request.Context(), att.FilePath)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File content not found"})
+		return
+	}
+	defer f.Close()
+
+	// Use original filename
+	filename := att.FileName
+	encodedFilename := url.QueryEscape(filename)
+	// Replace + with %20 for space compatibility
+	encodedFilename = strings.ReplaceAll(encodedFilename, "+", "%20")
+
+	// Standard approach: filename="ascii_only_fallback"; filename*=UTF-8''url_encoded
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"; filename*=UTF-8''%s", encodedFilename, encodedFilename))
+
+	c.Header("Content-Type", att.MimeType)
+	if att.MimeType == "" {
+		c.Header("Content-Type", "application/octet-stream")
+	}
+
+	if _, err := io.Copy(c.Writer, f); err != nil {
+		// Log error
+	}
+}
+
+func (h *MailHandler) downloadByPath(c *gin.Context, path string) {
 	f, err := h.storage.GetFile(c.Request.Context(), path)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
@@ -156,12 +189,10 @@ func (h *MailHandler) DownloadAttachment(c *gin.Context) {
 	defer f.Close()
 
 	fileName := filepath.Base(path)
+	// Legacy fallback, simple disposition
 	c.Header("Content-Disposition", "attachment; filename="+fileName)
 	c.Header("Content-Type", "application/octet-stream")
-
-	// Copy stream
-	// Note: In efficient prod code, use http.ServeContent or similar
-	// io.Copy(c.Writer, f)
+	io.Copy(c.Writer, f)
 }
 
 func filterEmpty(s []string) []string {

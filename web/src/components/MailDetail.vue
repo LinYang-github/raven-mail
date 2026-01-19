@@ -29,7 +29,7 @@
           <el-icon><Paperclip /></el-icon> 附件 ({{ mail.attachments.length }})
         </div>
         <div class="att-list">
-          <a v-for="att in mail.attachments" :key="att.id" :href="getDownloadUrl(att.file_path)" target="_blank" class="att-item">
+          <a v-for="att in mail.attachments" :key="att.id" :href="getDownloadUrl(att)" target="_blank" class="att-item">
             <el-icon class="att-icon"><Document /></el-icon>
             <div class="att-info">
               <div class="att-name">{{ att.file_name }}</div>

@@ -104,3 +104,7 @@ func (s *MailService) DeleteMail(ctx context.Context, userID, mailID string) err
 	// User is recipient -> delete for recipient
 	return s.repo.UpdateStatus(ctx, mailID, userID, "deleted")
 }
+
+func (s *MailService) GetAttachment(ctx context.Context, attachmentID string) (*domain.Attachment, error) {
+	return s.repo.GetAttachmentByID(ctx, attachmentID)
+}

@@ -1,0 +1,169 @@
+<template>
+  <div class="compose-view">
+    <div class="compose-header">
+      <h2>新建文电</h2>
+      <div class="actions">
+        <el-button @click="$emit('cancel')">取消</el-button>
+        <el-button type="primary" :loading="loading" @click="handleSubmit">
+          发送 <el-icon class="el-icon--right"><Promotion /></el-icon>
+        </el-button>
+      </div>
+    </div>
+
+    <div class="compose-form">
+      <el-form :model="form" ref="formRef" label-position="left" label-width="60px">
+        <el-form-item label="收件人">
+          <el-input v-model="form.to" placeholder="用户ID, 逗号分隔" />
+        </el-form-item>
+        
+        <el-form-item label="抄送">
+          <el-input v-model="form.cc" placeholder="可选" />
+        </el-form-item>
+        
+        <el-form-item label="主题">
+          <el-input v-model="form.subject" placeholder="邮件主题" />
+        </el-form-item>
+        
+        <div class="editor-container">
+          <el-input
+            v-model="form.content"
+            type="textarea"
+            placeholder="在此输入正文..."
+            resize="none"
+            class="content-editor"
+          />
+        </div>
+        
+        <div class="attachment-bar">
+          <el-upload
+            v-model:file-list="fileList"
+            action="#"
+            :auto-upload="false"
+            multiple
+            class="upload-inline"
+            :show-file-list="true"
+          >
+            <el-button link>
+              <el-icon><Paperclip /></el-icon> 添加附件
+            </el-button>
+          </el-upload>
+        </div>
+      </el-form>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { reactive, ref } from 'vue'
+import { sendMail } from '../services/api'
+import { ElMessage } from 'element-plus'
+import { Paperclip, Promotion } from '@element-plus/icons-vue'
+
+const emit = defineEmits(['cancel', 'success'])
+
+const loading = ref(false)
+const fileList = ref([])
+const form = reactive({
+  to: '',
+  cc: '',
+  subject: '',
+  content: ''
+})
+
+const handleSubmit = async () => {
+  if (!form.to || !form.subject || !form.content) {
+    ElMessage.warning('请填写必要字段')
+    return
+  }
+  
+  loading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('to', form.to)
+    formData.append('cc', form.cc)
+    formData.append('subject', form.subject)
+    formData.append('content', form.content)
+    
+    fileList.value.forEach(file => {
+      formData.append('attachments', file.raw)
+    })
+
+    await sendMail(formData)
+    ElMessage.success('发送成功')
+    emit('success')
+  } catch (err) {
+    ElMessage.error('发送失败')
+    console.error(err)
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<style scoped>
+.compose-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: white;
+}
+
+.compose-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #ebedf0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.compose-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.compose-form {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-container {
+  flex: 1;
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-editor {
+  flex: 1;
+  display: flex; /* Helps textarea fill height */
+}
+
+:deep(.el-textarea__inner) {
+  height: 100% !important;
+  min-height: 200px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  resize: none;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: #409EFF;
+}
+
+.attachment-bar {
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+</style>

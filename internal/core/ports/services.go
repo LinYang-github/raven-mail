@@ -12,6 +12,7 @@ type MailService interface {
 	GetSent(ctx context.Context, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error)
 	ReadMail(ctx context.Context, userID, mailID string) (*domain.Mail, error)
 	DeleteMail(ctx context.Context, userID, mailID string) error
+	GetAttachment(ctx context.Context, attachmentID string) (*domain.Attachment, error)
 }
 
 type StorageService interface {

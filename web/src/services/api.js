@@ -13,4 +13,4 @@ export const deleteMail = (id) => api.delete(`/mails/${id}?user_id=${USER_ID}`);
 export const sendMail = (formData) => api.post(`/mails/send?user_id=${USER_ID}`, formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 });
-export const getDownloadUrl = (path) => `http://localhost:8080/api/v1/mails/download?path=${encodeURIComponent(path)}&user_id=${USER_ID}`;
+export const getDownloadUrl = (att) => `http://localhost:8080/api/v1/mails/download?id=${att.id}&user_id=${USER_ID}`;

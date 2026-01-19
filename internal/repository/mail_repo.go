@@ -90,3 +90,11 @@ func (r *MailRepository) DeleteForSender(ctx context.Context, mailID string) err
 		Where("id = ?", mailID).
 		Update("sender_status", "deleted").Error
 }
+
+func (r *MailRepository) GetAttachmentByID(ctx context.Context, id string) (*domain.Attachment, error) {
+	var att domain.Attachment
+	if err := r.db.WithContext(ctx).First(&att, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &att, nil
+}

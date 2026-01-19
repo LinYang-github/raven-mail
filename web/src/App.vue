@@ -14,10 +14,15 @@
         @delete="handleDelete"
       />
       
-      <MailDetail :mail="selectedMail" />
+      <div class="right-pane">
+        <template v-if="isComposing">
+          <ComposeView @cancel="cancelCompose" @success="handleComposeSuccess" />
+        </template>
+        <template v-else>
+          <MailDetail :mail="selectedMail" />
+        </template>
+      </div>
     </div>
-
-    <ComposeModal v-model="showCompose" @success="handleComposeSuccess" />
   </div>
 </template>
 
@@ -26,15 +31,15 @@ import { ref, computed, onMounted, watch } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 import MailList from './components/MailList.vue'
 import MailDetail from './components/MailDetail.vue'
-import ComposeModal from './components/ComposeModal.vue'
+import ComposeView from './components/ComposeView.vue'
 import { getInbox, getSent, getMail, deleteMail } from './services/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const currentView = ref('inbox')
 const mails = ref([])
 const selectedMail = ref(null)
+const isComposing = ref(false)
 const loading = ref(false)
-const showCompose = ref(false)
 const searchQuery = ref('')
 
 const listTitle = computed(() => currentView.value === 'inbox' ? '收件箱' : '已发送')
@@ -42,10 +47,18 @@ const listTitle = computed(() => currentView.value === 'inbox' ? '收件箱' : '
 const setView = (view) => {
   currentView.value = view
   searchQuery.value = '' // Reset search
+  isComposing.value = false
+  selectedMail.value = null
 }
 
 const openCompose = () => {
-  showCompose.value = true
+  isComposing.value = true
+  selectedMail.value = null // Deselect mail logic
+}
+
+const cancelCompose = () => {
+  isComposing.value = false
+  // Optionally select the first mail if available
 }
 
 const fetchMails = async () => {
@@ -55,7 +68,9 @@ const fetchMails = async () => {
       ? await getInbox(1, searchQuery.value) 
       : await getSent(1, searchQuery.value)
     mails.value = res.data.data || []
-    if (!mails.value.find(m => m.id === selectedMail.value?.id)) {
+    
+    // Auto-select logic if needed, but current logic is fine
+    if (!isComposing.value && selectedMail.value && !mails.value.find(m => m.id === selectedMail.value.id)) {
       selectedMail.value = null
     }
   } catch (err) {
@@ -84,7 +99,6 @@ const handleDelete = async (id) => {
     // Refresh list
     fetchMails()
     
-    // Clear selection if deleted item was selected
     if (selectedMail.value?.id === id) {
       selectedMail.value = null
     }
@@ -97,6 +111,7 @@ const handleDelete = async (id) => {
 }
 
 const selectMail = async (mail) => {
+  isComposing.value = false
   selectedMail.value = mail // Optimistic UI
   // Mark as read or fetch full details if needed
   try {
@@ -108,8 +123,12 @@ const selectMail = async (mail) => {
 }
 
 const handleComposeSuccess = () => {
+  isComposing.value = false
   if (currentView.value === 'sent') {
     fetchMails()
+  } else {
+    // Maybe switch to sent view? Or just stay in inbox
+    ElMessage.success('已发送')
   }
 }
 
@@ -146,5 +165,13 @@ html, body, #app {
   display: flex;
   background: white;
   overflow: hidden;
+}
+
+.right-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
 }
 </style>

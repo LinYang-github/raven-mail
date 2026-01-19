@@ -12,4 +12,5 @@ type MailRepository interface {
 	GetSent(ctx context.Context, senderID string, page, pageSize int, query string) ([]domain.Mail, int64, error)
 	UpdateStatus(ctx context.Context, mailID, recipientID, status string) error
 	DeleteForSender(ctx context.Context, mailID string) error
+	GetAttachmentByID(ctx context.Context, id string) (*domain.Attachment, error)
 }
