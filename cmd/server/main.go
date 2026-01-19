@@ -62,6 +62,7 @@ func main() {
 			mails.GET("/inbox", mailHandler.GetInbox)
 			mails.GET("/sent", mailHandler.GetSent)
 			mails.GET("/:id", mailHandler.GetMail)
+			mails.DELETE("/:id", mailHandler.DeleteMail)
 			mails.GET("/download", mailHandler.DownloadAttachment)
 		}
 	}

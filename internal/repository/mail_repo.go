@@ -28,15 +28,21 @@ func (r *MailRepository) GetByID(ctx context.Context, id string) (*domain.Mail, 
 	return &mail, nil
 }
 
-func (r *MailRepository) GetInbox(ctx context.Context, recipientID string, page, pageSize int) ([]domain.Mail, int64, error) {
+func (r *MailRepository) GetInbox(ctx context.Context, recipientID string, page, pageSize int, queryStr string) ([]domain.Mail, int64, error) {
 	var mails []domain.Mail
 	var total int64
 
 	// Join with recipients table
 	query := r.db.WithContext(ctx).
 		Joins("JOIN mail_recipients ON mail_recipients.mail_id = mails.id").
-		Where("mail_recipients.recipient_id = ? AND mail_recipients.status != 'deleted'", recipientID).
-		Preload("Attachments")
+		Where("mail_recipients.recipient_id = ? AND mail_recipients.status != 'deleted'", recipientID)
+
+	if queryStr != "" {
+		like := "%" + queryStr + "%"
+		query = query.Where("mails.subject LIKE ? OR mails.content LIKE ?", like, like)
+	}
+
+	query = query.Preload("Attachments")
 
 	if err := query.Model(&domain.Mail{}).Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -49,11 +55,18 @@ func (r *MailRepository) GetInbox(ctx context.Context, recipientID string, page,
 	return mails, total, nil
 }
 
-func (r *MailRepository) GetSent(ctx context.Context, senderID string, page, pageSize int) ([]domain.Mail, int64, error) {
+func (r *MailRepository) GetSent(ctx context.Context, senderID string, page, pageSize int, queryStr string) ([]domain.Mail, int64, error) {
 	var mails []domain.Mail
 	var total int64
 
-	query := r.db.WithContext(ctx).Where("sender_id = ?", senderID).Preload("Attachments")
+	query := r.db.WithContext(ctx).Where("sender_id = ? AND (sender_status IS NULL OR sender_status != 'deleted')", senderID)
+
+	if queryStr != "" {
+		like := "%" + queryStr + "%"
+		query = query.Where("subject LIKE ? OR content LIKE ?", like, like)
+	}
+
+	query = query.Preload("Attachments")
 
 	if err := query.Model(&domain.Mail{}).Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -70,4 +83,10 @@ func (r *MailRepository) UpdateStatus(ctx context.Context, mailID, recipientID, 
 	return r.db.WithContext(ctx).Model(&domain.MailRecipient{}).
 		Where("mail_id = ? AND recipient_id = ?", mailID, recipientID).
 		Update("status", status).Error
+}
+
+func (r *MailRepository) DeleteForSender(ctx context.Context, mailID string) error {
+	return r.db.WithContext(ctx).Model(&domain.Mail{}).
+		Where("id = ?", mailID).
+		Update("sender_status", "deleted").Error
 }

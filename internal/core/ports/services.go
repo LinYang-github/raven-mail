@@ -8,9 +8,10 @@ import (
 
 type MailService interface {
 	SendMail(ctx context.Context, senderID string, req SendMailRequest) (*domain.Mail, error)
-	GetInbox(ctx context.Context, userID string, page, pageSize int) ([]domain.Mail, int64, error)
-	GetSent(ctx context.Context, userID string, page, pageSize int) ([]domain.Mail, int64, error)
+	GetInbox(ctx context.Context, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error)
+	GetSent(ctx context.Context, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error)
 	ReadMail(ctx context.Context, userID, mailID string) (*domain.Mail, error)
+	DeleteMail(ctx context.Context, userID, mailID string) error
 }
 
 type StorageService interface {

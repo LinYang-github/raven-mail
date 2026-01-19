@@ -79,10 +79,11 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 
 func (h *MailHandler) GetInbox(c *gin.Context) {
 	userID := c.Query("user_id")
+	query := c.Query("q")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	mails, total, err := h.service.GetInbox(c.Request.Context(), userID, page, pageSize)
+	mails, total, err := h.service.GetInbox(c.Request.Context(), userID, page, pageSize, query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -93,16 +94,29 @@ func (h *MailHandler) GetInbox(c *gin.Context) {
 
 func (h *MailHandler) GetSent(c *gin.Context) {
 	userID := c.Query("user_id")
+	query := c.Query("q")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	mails, total, err := h.service.GetSent(c.Request.Context(), userID, page, pageSize)
+	mails, total, err := h.service.GetSent(c.Request.Context(), userID, page, pageSize, query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": mails, "total": total, "page": page, "page_size": pageSize})
+}
+
+func (h *MailHandler) DeleteMail(c *gin.Context) {
+	id := c.Param("id")
+	userID := c.Query("user_id") // In real app, from context
+
+	if err := h.service.DeleteMail(c.Request.Context(), userID, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 func (h *MailHandler) GetMail(c *gin.Context) {

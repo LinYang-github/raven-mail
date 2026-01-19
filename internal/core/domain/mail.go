@@ -9,14 +9,15 @@ import (
 
 // Mail represents an email entity
 type Mail struct {
-	ID        string         `gorm:"primaryKey;type:uuid" json:"id"`
-	SenderID  string         `gorm:"index;not null" json:"sender_id"`
-	Subject   string         `gorm:"not null" json:"subject"`
-	Content   string         `gorm:"type:text" json:"content"`
-	ParentID  *string        `gorm:"index" json:"parent_id,omitempty"` // For threads/replies
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID           string         `gorm:"primaryKey;type:uuid" json:"id"`
+	SenderID     string         `gorm:"index;not null" json:"sender_id"`
+	SenderStatus string         `gorm:"type:varchar(20);default:'normal'" json:"-"` // normal, deleted
+	Subject      string         `gorm:"not null" json:"subject"`
+	Content      string         `gorm:"type:text" json:"content"`
+	ParentID     *string        `gorm:"index" json:"parent_id,omitempty"` // For threads/replies
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 
 	Attachments []Attachment    `gorm:"foreignKey:MailID" json:"attachments"`
 	Recipients  []MailRecipient `gorm:"foreignKey:MailID" json:"recipients"`

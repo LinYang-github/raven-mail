@@ -10,6 +10,8 @@
         :selectedId="selectedMail?.id"
         @select="selectMail"
         @refresh="fetchMails"
+        @search="handleSearch"
+        @delete="handleDelete"
       />
       
       <MailDetail :mail="selectedMail" />
@@ -25,18 +27,21 @@ import Sidebar from './components/Sidebar.vue'
 import MailList from './components/MailList.vue'
 import MailDetail from './components/MailDetail.vue'
 import ComposeModal from './components/ComposeModal.vue'
-import { getInbox, getSent, getMail } from './services/api'
+import { getInbox, getSent, getMail, deleteMail } from './services/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const currentView = ref('inbox')
 const mails = ref([])
 const selectedMail = ref(null)
 const loading = ref(false)
 const showCompose = ref(false)
+const searchQuery = ref('')
 
 const listTitle = computed(() => currentView.value === 'inbox' ? '收件箱' : '已发送')
 
 const setView = (view) => {
   currentView.value = view
+  searchQuery.value = '' // Reset search
 }
 
 const openCompose = () => {
@@ -46,13 +51,48 @@ const openCompose = () => {
 const fetchMails = async () => {
   loading.value = true
   try {
-    const res = currentView.value === 'inbox' ? await getInbox() : await getSent()
+    const res = currentView.value === 'inbox' 
+      ? await getInbox(1, searchQuery.value) 
+      : await getSent(1, searchQuery.value)
     mails.value = res.data.data || []
-    selectedMail.value = null
+    if (!mails.value.find(m => m.id === selectedMail.value?.id)) {
+      selectedMail.value = null
+    }
   } catch (err) {
     console.error(err)
   } finally {
     loading.value = false
+  }
+}
+
+const handleSearch = (q) => {
+  searchQuery.value = q
+  fetchMails()
+}
+
+const handleDelete = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这封文电吗？', '提示', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消'
+    })
+    
+    await deleteMail(id)
+    ElMessage.success('删除成功')
+    
+    // Refresh list
+    fetchMails()
+    
+    // Clear selection if deleted item was selected
+    if (selectedMail.value?.id === id) {
+      selectedMail.value = null
+    }
+  } catch (err) {
+    if (err !== 'cancel') {
+      console.error(err)
+      ElMessage.error('删除失败')
+    }
   }
 }
 

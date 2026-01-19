@@ -69,12 +69,12 @@ func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.S
 	return mail, nil
 }
 
-func (s *MailService) GetInbox(ctx context.Context, userID string, page, pageSize int) ([]domain.Mail, int64, error) {
-	return s.repo.GetInbox(ctx, userID, page, pageSize)
+func (s *MailService) GetInbox(ctx context.Context, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error) {
+	return s.repo.GetInbox(ctx, userID, page, pageSize, query)
 }
 
-func (s *MailService) GetSent(ctx context.Context, userID string, page, pageSize int) ([]domain.Mail, int64, error) {
-	return s.repo.GetSent(ctx, userID, page, pageSize)
+func (s *MailService) GetSent(ctx context.Context, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error) {
+	return s.repo.GetSent(ctx, userID, page, pageSize, query)
 }
 
 func (s *MailService) ReadMail(ctx context.Context, userID, mailID string) (*domain.Mail, error) {
@@ -88,4 +88,19 @@ func (s *MailService) ReadMail(ctx context.Context, userID, mailID string) (*dom
 	_ = s.repo.UpdateStatus(ctx, mailID, userID, "read")
 
 	return mail, nil
+}
+
+func (s *MailService) DeleteMail(ctx context.Context, userID, mailID string) error {
+	mail, err := s.repo.GetByID(ctx, mailID)
+	if err != nil {
+		return err
+	}
+
+	if mail.SenderID == userID {
+		// User is sender -> delete for sender
+		return s.repo.DeleteForSender(ctx, mailID)
+	}
+
+	// User is recipient -> delete for recipient
+	return s.repo.UpdateStatus(ctx, mailID, userID, "deleted")
 }

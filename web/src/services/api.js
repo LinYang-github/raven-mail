@@ -6,9 +6,10 @@ const api = axios.create({
 
 const USER_ID = 'user-123';
 
-export const getInbox = (page = 1) => api.get(`/mails/inbox?page=${page}&user_id=${USER_ID}`);
-export const getSent = (page = 1) => api.get(`/mails/sent?page=${page}&user_id=${USER_ID}`);
+export const getInbox = (page = 1, query = '') => api.get(`/mails/inbox?page=${page}&user_id=${USER_ID}&q=${encodeURIComponent(query)}`);
+export const getSent = (page = 1, query = '') => api.get(`/mails/sent?page=${page}&user_id=${USER_ID}&q=${encodeURIComponent(query)}`);
 export const getMail = (id) => api.get(`/mails/${id}?user_id=${USER_ID}`);
+export const deleteMail = (id) => api.delete(`/mails/${id}?user_id=${USER_ID}`);
 export const sendMail = (formData) => api.post(`/mails/send?user_id=${USER_ID}`, formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 });

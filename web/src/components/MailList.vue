@@ -2,9 +2,21 @@
   <div class="mail-list">
     <div class="header">
       <span class="title">{{ title }}</span>
-      <el-button circle size="small" @click="$emit('refresh')">
-        <el-icon><Refresh /></el-icon>
-      </el-button>
+      <div class="actions">
+        <el-button circle size="small" @click="$emit('refresh')">
+          <el-icon><Refresh /></el-icon>
+        </el-button>
+      </div>
+    </div>
+    
+    <div class="search-bar">
+      <el-input 
+        v-model="searchQuery" 
+        placeholder="搜索邮件..." 
+        prefix-icon="Search"
+        clearable
+        @input="handleSearch"
+      />
     </div>
 
     <div class="list-container" v-loading="loading">
@@ -19,37 +31,64 @@
       >
         <div class="item-header">
           <span class="sender">{{ mail.sender_id }}</span>
-          <span class="time">{{ formatDate(mail.created_at) }}</span>
+          <div class="header-right">
+            <div v-if="mail.attachments?.length" class="attachment-icon">
+              <el-icon><Paperclip /></el-icon>
+            </div>
+            <span class="time">{{ formatDate(mail.created_at) }}</span>
+          </div>
         </div>
-        <div class="subject" :class="{ 'active-text': selectedId === mail.id }">
-          {{ mail.subject || '(无主题)' }}
+        
+        <div class="subject-row">
+          <div class="subject" :class="{ 'active-text': selectedId === mail.id }">
+            {{ mail.subject || '(无主题)' }}
+          </div>
         </div>
+        
         <div class="preview">{{ mail.content }}</div>
-        <div v-if="mail.attachments?.length" class="attachment-tag">
-          <el-icon><Paperclip /></el-icon> {{ mail.attachments.length }}
-        </div>
+
+        <el-button 
+          type="danger" 
+          link 
+          size="small" 
+          class="delete-btn"
+          @click.stop="$emit('delete', mail.id)"
+        >
+          <el-icon><Delete /></el-icon>
+        </el-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Refresh, Paperclip } from '@element-plus/icons-vue'
+import { computed, ref, watch } from 'vue'
+import { Refresh, Paperclip, Search, Delete } from '@element-plus/icons-vue'
+import { debounce } from 'lodash'
 
 const props = defineProps(['mails', 'loading', 'selectedId', 'title'])
-defineEmits(['select', 'refresh'])
+const emit = defineEmits(['select', 'refresh', 'search', 'delete'])
 
 const mailList = computed(() => props.mails || [])
+const searchQuery = ref('')
 
 const formatDate = (dateStr) => {
-  return new Date(dateStr).toLocaleDateString()
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+let timeout
+const handleSearch = () => {
+  clearTimeout(timeout)
+  timeout = setTimeout(() => {
+    emit('search', searchQuery.value)
+  }, 500)
 }
 </script>
 
 <style scoped>
 .mail-list {
-  width: 320px;
+  width: 300px; /* Reduced width slightly */
   background: white;
   border-right: 1px solid #ebedf0;
   display: flex;
@@ -58,67 +97,102 @@ const formatDate = (dateStr) => {
 }
 
 .header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #ebedf0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .header .title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #1a1a1a;
+}
+
+.search-bar {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .list-container {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
 }
 
 .mail-item {
-  padding: 16px;
-  margin-bottom: 8px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f5f7fa;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid transparent;
+  position: relative;
 }
 
 .mail-item:hover {
   background: #f8f9fb;
 }
 
+.mail-item:hover .delete-btn {
+  display: flex;
+}
+
 .mail-item.active {
-  background: #f0f7ff;
-  border-color: #c6e2ff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+  background: #eef5fe;
+  border-color: transparent;
+}
+
+.mail-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #409EFF;
 }
 
 .item-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .sender {
   font-weight: 600;
   font-size: 14px;
   color: #303133;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
 }
 
 .time {
-  font-size: 11px;
+  font-size: 12px;
   color: #909399;
+}
+
+.attachment-icon {
+  color: #909399;
+  font-size: 12px;
+  display: flex;
+}
+
+.subject-row {
+  margin-bottom: 2px;
 }
 
 .subject {
   font-size: 13px;
   font-weight: 500;
   color: #606266;
-  margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -130,23 +204,21 @@ const formatDate = (dateStr) => {
 
 .preview {
   font-size: 12px;
-  color: #909399;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  color: #999;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  height: 18px; /* Force single line height */
 }
 
-.attachment-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #f0f2f5;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 11px;
-  color: #909399;
-  margin-top: 8px;
+.delete-btn {
+  display: none; /* Hidden by default */
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white; /* Cover text behind it */
+  box-shadow: -10px 0 10px white; /* Fade out effect */
+  border-radius: 4px;
 }
 </style>
