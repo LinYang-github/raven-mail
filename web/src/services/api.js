@@ -16,3 +16,4 @@ export const sendMail = (formData) => api.post(`/mails/send?user_id=${getUserID(
   headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const getDownloadUrl = (att) => `http://localhost:8080/api/v1/mails/download?id=${att.id}&user_id=${getUserID()}`;
+export const getPreviewUrl = (att) => `http://localhost:8080/api/v1/mails/download?id=${att.id}&user_id=${getUserID()}&disposition=inline`;

@@ -29,14 +29,32 @@
           <el-icon><Paperclip /></el-icon> 附件 ({{ mail.attachments.length }})
         </div>
         <div class="att-list">
-          <a v-for="att in mail.attachments" :key="att.id" :href="getDownloadUrl(att)" target="_blank" class="att-item">
+          <div v-for="att in mail.attachments" :key="att.id" class="att-item">
             <el-icon class="att-icon"><Document /></el-icon>
             <div class="att-info">
               <div class="att-name">{{ att.file_name }}</div>
               <div class="att-size">{{ formatSize(att.file_size) }}</div>
             </div>
-            <el-icon class="dl-icon"><Download /></el-icon>
-          </a>
+            <div class="att-actions">
+              <el-button 
+                v-if="canPreview(att)"
+                link 
+                type="primary" 
+                size="small"
+                @click.prevent="handlePreview(att)"
+              >
+                <el-icon><View /></el-icon> 预览
+              </el-button>
+              <el-button 
+                link 
+                type="primary" 
+                size="small"
+                @click.prevent="downloadFile(att)"
+              >
+                 <el-icon><Download /></el-icon> 下载
+              </el-button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -44,10 +62,24 @@
 </template>
 
 <script setup>
-import { getDownloadUrl } from '../services/api'
-import { Paperclip, Document, Download } from '@element-plus/icons-vue'
+import { getDownloadUrl, getPreviewUrl } from '../services/api'
+import { Paperclip, Document, Download, View } from '@element-plus/icons-vue'
 
 defineProps(['mail'])
+
+const canPreview = (att) => {
+  const type = att.mime_type || ''
+  const name = att.file_name?.toLowerCase() || ''
+  return type.startsWith('image/') || type === 'application/pdf' || name.endsWith('.pdf') || name.match(/\.(jpg|jpeg|png|gif|webp)$/)
+}
+
+const handlePreview = (att) => {
+  window.open(getPreviewUrl(att), '_blank')
+}
+
+const downloadFile = (att) => {
+  window.open(getDownloadUrl(att), '_self')
+}
 
 const formatSize = (bytes) => {
   if (bytes === 0) return '0 B';
@@ -163,8 +195,7 @@ const formatSize = (bytes) => {
   border: 1px solid #ebedf0;
   border-radius: 6px;
   background: white;
-  text-decoration: none;
-  width: 240px;
+  width: 320px; /* Increased width for actions */
   transition: all 0.2s;
 }
 
@@ -183,6 +214,7 @@ const formatSize = (bytes) => {
 .att-info {
   flex: 1;
   overflow: hidden;
+  margin-right: 10px;
 }
 
 .att-name {
@@ -198,7 +230,8 @@ const formatSize = (bytes) => {
   color: #909399;
 }
 
-.dl-icon {
-  color: #c0c4cc;
+.att-actions {
+  display: flex;
+  gap: 4px;
 }
 </style>

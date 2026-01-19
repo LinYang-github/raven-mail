@@ -167,10 +167,17 @@ func (h *MailHandler) DownloadAttachment(c *gin.Context) {
 	// Replace + with %20 for space compatibility
 	encodedFilename = strings.ReplaceAll(encodedFilename, "+", "%20")
 
+	// Determine disposition type
+	dispositionType := "attachment"
+	if c.Query("disposition") == "inline" {
+		dispositionType = "inline"
+	}
+
 	// Standard approach: filename="ascii_only_fallback"; filename*=UTF-8''url_encoded
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"; filename*=UTF-8''%s", encodedFilename, encodedFilename))
+	c.Header("Content-Disposition", fmt.Sprintf("%s; filename=\"%s\"; filename*=UTF-8''%s", dispositionType, encodedFilename, encodedFilename))
 
 	c.Header("Content-Type", att.MimeType)
+	// If inline and no mime type, try to guess or default to octet-stream (which browser will download anyway)
 	if att.MimeType == "" {
 		c.Header("Content-Type", "application/octet-stream")
 	}
