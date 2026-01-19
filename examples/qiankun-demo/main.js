@@ -1,16 +1,28 @@
-import { registerMicroApps, start } from 'qiankun';
+import { registerMicroApps, start, initGlobalState } from 'qiankun';
+
+// 初始状态
+const state = {
+    user: { name: 'User A', id: 'user-123' }
+};
+
+// 初始化全局状态
+const actions = initGlobalState(state);
+
+// 监听状态变更
+actions.onGlobalStateChange((state, prev) => {
+    console.log('[host] state changed', state);
+});
 
 // 1. 定义子应用
 const apps = [
   {
     name: 'raven-mail', // 子应用名称
-    entry: '//localhost:5173', // 子应用开发环境地址 (Raven web dev server)
+    entry: '//localhost:5173', // 子应用开发环境地址
     container: '#subapp-container', // 挂载容器 ID
     activeRule: '/mail', // 激活路由
     props: {
-        // 全局传值示例：模拟 Token 下发
         token: 'demo-host-token-xyz',
-        user: { name: 'Host Admin', id: 'admin-001' }
+        user: state.user // Initial prop
     }
   },
 ];
@@ -20,11 +32,31 @@ registerMicroApps(apps);
 
 // 3. 启动
 start({
-    prefetch: false, // Demo环境通常关闭预加载
+    prefetch: false,
     sandbox: {
-        experimentalStyleIsolation: true // Use experimental scope isolation instead
+        experimentalStyleIsolation: true
     }
 });
+
+// User Switch Logic
+const userMap = {
+    'user-123': 'User A',
+    'user-456': 'User B',
+    'admin': 'Admin'
+};
+
+const selector = document.getElementById('user-select');
+if (selector) {
+    selector.addEventListener('change', (e) => {
+        const uid = e.target.value;
+        const name = userMap[uid];
+        const newUser = { name, id: uid };
+        
+        console.log('[host] switching user to:', newUser);
+        actions.setGlobalState({ user: newUser });
+    });
+}
+
 
 // Demo 简单的路由高亮逻辑
 const updateNav = () => {

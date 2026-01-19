@@ -7,6 +7,8 @@ import './style.css'
 
 import { renderWithQiankun, qiankunWindow } from 'vite-plugin-qiankun/dist/helper'
 
+import { userStore } from './store/user'
+
 let app = null
 
 function render(props = {}) {
@@ -30,7 +32,23 @@ renderWithQiankun({
     console.log('[raven-mail] bootstrap')
   },
   mount(props) {
-    console.log('[raven-mail] mount')
+    console.log('[raven-mail] mount', props)
+    
+    // Sync initial user
+    if (props.user) {
+      userStore.setUser(props.user.id || 'user-123', props.user.name)
+    }
+
+    // Sync state changes
+    if (props.onGlobalStateChange) {
+      props.onGlobalStateChange((state, prev) => {
+        console.log('[raven-mail] state change', state)
+        if (state.user) {
+          userStore.setUser(state.user.id, state.user.name)
+        }
+      })
+    }
+    
     render(props)
   },
   unmount() {

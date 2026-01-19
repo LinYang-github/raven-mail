@@ -33,6 +33,7 @@ import MailList from './components/MailList.vue'
 import MailDetail from './components/MailDetail.vue'
 import ComposeView from './components/ComposeView.vue'
 import { getInbox, getSent, getMail, deleteMail } from './services/api'
+import { userStore } from './store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const currentView = ref('inbox')
@@ -44,12 +45,22 @@ const searchQuery = ref('')
 
 const listTitle = computed(() => currentView.value === 'inbox' ? '收件箱' : '已发送')
 
+// Watch user change to refetch
+watch(() => userStore.id, (newId) => {
+  console.log('User changed to', newId)
+  // Reset view
+  selectedMail.value = null
+  isComposing.value = false
+  fetchMails()
+})
+
 const setView = (view) => {
   currentView.value = view
   searchQuery.value = '' // Reset search
   isComposing.value = false
   selectedMail.value = null
 }
+
 
 const openCompose = () => {
   isComposing.value = true
