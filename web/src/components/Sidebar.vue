@@ -44,6 +44,7 @@
 
 <script setup>
 import { Message, Plus, Box, Position, UserFilled } from '@element-plus/icons-vue'
+import { userStore } from '../store/user'
 
 defineProps(['currentView'])
 defineEmits(['update:view', 'compose'])

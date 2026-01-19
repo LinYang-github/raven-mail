@@ -121,7 +121,7 @@ const handleSearch = () => {
 }
 
 .mail-item {
-  padding: 10px 16px;
+  padding: 12px 18px; /* Increased padding */
   border-bottom: 1px solid #f5f7fa;
   cursor: pointer;
   transition: all 0.2s;

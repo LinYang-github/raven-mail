@@ -11,14 +11,16 @@
     </div>
 
     <div class="compose-form">
-      <el-form :model="form" ref="formRef" label-position="left" label-width="60px">
-        <el-form-item label="收件人">
-          <el-input v-model="form.to" placeholder="用户ID, 逗号分隔" />
-        </el-form-item>
-        
-        <el-form-item label="抄送">
-          <el-input v-model="form.cc" placeholder="可选" />
-        </el-form-item>
+      <el-form :model="form" ref="formRef" label-position="top" class="main-form">
+        <div class="form-row">
+          <el-form-item label="收件人" class="flex-item">
+            <el-input v-model="form.to" placeholder="用户ID, 逗号分隔" />
+          </el-form-item>
+          
+          <el-form-item label="抄送" class="flex-item">
+            <el-input v-model="form.cc" placeholder="可选" />
+          </el-form-item>
+        </div>
         
         <el-form-item label="主题">
           <el-input v-model="form.subject" placeholder="邮件主题" />
@@ -125,10 +127,29 @@ const handleSubmit = async () => {
 
 .compose-form {
   flex: 1;
-  padding: 24px;
+  padding: 30px 50px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  align-items: center; /* Center the form */
+  background: #fff;
+}
+
+.main-form {
+  width: 100%;
+  max-width: 900px; /* Limit max width */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.flex-item {
+  flex: 1;
 }
 
 .editor-container {
@@ -136,6 +157,7 @@ const handleSubmit = async () => {
   margin: 10px 0;
   display: flex;
   flex-direction: column;
+  min-height: 200px;
 }
 
 .content-editor {

@@ -46,7 +46,7 @@ renderWithQiankun({
         if (state.user) {
           userStore.setUser(state.user.id, state.user.name)
         }
-      })
+      }, true) // fireImmediately: true
     }
     
     render(props)
