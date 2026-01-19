@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业门户 (Host Demo)</title>
+    <style>
+        body { margin: 0; font-family: -apple-system, sans-serif; display: flex; height: 100vh; }
+        .main-sidebar { 
+            width: 200px; 
+            background: #001529; 
+            color: white; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .nav-item {
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #a6adb4;
+            text-decoration: none;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: #1890ff;
+            color: white;
+        }
+        .main-content {
+            flex: 1;
+            background: #f0f2f5;
+            position: relative;
+            overflow: hidden;
+        }
+        #subapp-container {
+            width: 100%;
+            height: 100%;
+        }
+        .welcome {
+            padding: 40px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-sidebar">
+        <h2 style="margin-top:0;">示例</h2>
+        <a class="nav-item" href="/mail" id="nav-mail">📧 文电管理</a>
+    </div>
+
+    <div class="main-content">
+        <div id="subapp-container"></div>
+        <div id="home-content" class="welcome">
+            <h1>欢迎进入企业统一办公平台</h1>
+            <p>请点击左侧 "文电管理" 访问微前端子应用</p>
+        </div>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+</body>
+</html>
