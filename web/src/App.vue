@@ -15,12 +15,14 @@
       />
       
       <div class="right-pane">
-        <template v-if="isComposing">
-          <ComposeView @cancel="cancelCompose" @success="handleComposeSuccess" />
-        </template>
-        <template v-else>
-          <MailDetail :mail="selectedMail" />
-        </template>
+        <router-view v-slot="{ Component }">
+          <component 
+            :is="Component" 
+            :mail="selectedMail"
+            @cancel="cancelCompose"
+            @success="handleComposeSuccess"
+          />
+        </router-view>
       </div>
     </div>
   </div>
@@ -28,6 +30,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import MailList from './components/MailList.vue'
 import MailDetail from './components/MailDetail.vue'
@@ -36,48 +39,66 @@ import { getInbox, getSent, getMail, deleteMail } from './services/api'
 import { userStore } from './store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const currentView = ref('inbox')
+const route = useRoute()
+const router = useRouter()
+
 const mails = ref([])
 const selectedMail = ref(null)
-const isComposing = ref(false)
 const loading = ref(false)
 const searchQuery = ref('')
 
+// 从路由推导当前视图
+const currentView = computed(() => {
+  if (route.path.startsWith('/inbox')) return 'inbox'
+  if (route.path.startsWith('/sent')) return 'sent'
+  if (route.path.startsWith('/compose')) return 'compose'
+  return 'inbox'
+})
+
+const isComposing = computed(() => currentView.value === 'compose')
 const listTitle = computed(() => currentView.value === 'inbox' ? '收件箱' : '已发送')
 
-// Watch user or session change to refetch
-watch([() => userStore.id, () => userStore.sessionId], ([newId, newSession], [oldId, oldSession]) => {
-  console.log('Context changed:', { userId: newId, sessionId: newSession })
-  // Reset view
-  selectedMail.value = null
-  isComposing.value = false
-  fetchMails()
+// 监听路由参数中的 ID 变化，加载邮件详情
+watch(() => route.params.id, async (newId) => {
+  if (newId) {
+    try {
+      const res = await getMail(newId)
+      selectedMail.value = res.data
+    } catch (err) {
+      console.error('Failed to fetch mail detail:', err)
+      selectedMail.value = null
+    }
+  } else {
+    selectedMail.value = null
+  }
+}, { immediate: true })
+
+// 监听视图切换，重新抓取列表
+watch([currentView, () => userStore.id, () => userStore.sessionId], () => {
+  if (currentView.value !== 'compose') {
+    fetchMails()
+  }
 })
 
 const setView = (view) => {
-  currentView.value = view
-  searchQuery.value = '' // Reset search
-  isComposing.value = false
-  selectedMail.value = null
+  router.push(`/${view}`)
 }
 
-
 const openCompose = () => {
-  isComposing.value = true
-  selectedMail.value = null // Deselect mail logic
+  router.push('/compose')
 }
 
 const cancelCompose = () => {
-  isComposing.value = false
-  // Optionally select the first mail if available
+  router.back()
 }
 
 const fetchMails = async () => {
   loading.value = true
   try {
-    const res = currentView.value === 'inbox' 
-      ? await getInbox(1, searchQuery.value) 
-      : await getSent(1, searchQuery.value)
+    const res = currentView.value === 'sent' 
+      ? await getSent(1, searchQuery.value)
+      : await getInbox(1, searchQuery.value)
+    
     mails.value = res.data.data || []
     
     // 如果是收件箱，统计未读数并回传主应用
@@ -87,11 +108,6 @@ const fetchMails = async () => {
         return r && r.status === 'unread'
       }).length
       userStore.setUnreadCount(unread)
-    }
-
-    // Auto-select logic if needed, but current logic is fine
-    if (!isComposing.value && selectedMail.value && !mails.value.find(m => m.id === selectedMail.value.id)) {
-      selectedMail.value = null
     }
   } catch (err) {
     console.error(err)
@@ -116,11 +132,10 @@ const handleDelete = async (id) => {
     await deleteMail(id)
     ElMessage.success('删除成功')
     
-    // Refresh list
     fetchMails()
     
-    if (selectedMail.value?.id === id) {
-      selectedMail.value = null
+    if (route.params.id === id) {
+      router.push(`/${currentView.value}`)
     }
   } catch (err) {
     if (err !== 'cancel') {
@@ -130,36 +145,24 @@ const handleDelete = async (id) => {
   }
 }
 
-const selectMail = async (mail) => {
-  // 如果点击的是未读邮件，前端立即减少未读数并通知主应用（优化体验）
-  const r = mail.recipients?.find(rp => rp.recipient_id === userStore.id)
-  if (r && r.status === 'unread' && currentView.value === 'inbox') {
-    userStore.setUnreadCount(Math.max(0, userStore.unreadCount - 1))
-    // 手动更新本地对象状态，避免列表刷新前显示还是未读
-    r.status = 'read'
-  }
-
-  isComposing.value = false
-  selectedMail.value = mail // Optimistic UI
-  // Mark as read or fetch full details if needed
-  try {
-    const res = await getMail(mail.id)
-    selectedMail.value = res.data
-  } catch (err) {
-    console.error(err)
+const selectMail = (mail) => {
+  // 仅跳转路由，详情加载由上面的 watch 处理
+  router.push(`/${currentView.value}/${mail.id}`)
+  
+  // 体验优化：如果是未读，前端先行扣减
+  if (currentView.value === 'inbox') {
+    const r = mail.recipients?.find(rp => rp.recipient_id === userStore.id)
+    if (r && r.status === 'unread') {
+      userStore.setUnreadCount(Math.max(0, userStore.unreadCount - 1))
+      r.status = 'read'
+    }
   }
 }
 
 const handleComposeSuccess = () => {
-  isComposing.value = false
-  if (currentView.value === 'sent') {
-    fetchMails()
-  }
+  ElMessage.success('发送成功')
+  router.push('/sent')
 }
-
-watch(currentView, () => {
-  fetchMails()
-})
 
 onMounted(() => {
   fetchMails()

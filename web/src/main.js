@@ -4,6 +4,7 @@ import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import './style.css'
+import router from './router'
 
 import { renderWithQiankun, qiankunWindow } from 'vite-plugin-qiankun/dist/helper'
 
@@ -16,6 +17,7 @@ function render(props = {}) {
   app = createApp(App)
   
   app.use(ElementPlus)
+  app.use(router)
   
   // Register all icons globally
   for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
