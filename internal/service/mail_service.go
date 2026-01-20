@@ -50,19 +50,21 @@ func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.S
 	// Handle Attachments
 	var attachments []domain.Attachment
 	for _, attReq := range req.Attachments {
-		path, err := s.storage.UploadFile(ctx, attReq.FileName, attReq.Content)
+		path, err := s.storage.UploadFile(ctx, req.SessionID, attReq.FileName, attReq.Content)
 		if err != nil {
 			return nil, err
 		}
 		attachments = append(attachments, domain.Attachment{
-			FileName: attReq.FileName,
-			FilePath: path,
-			FileSize: attReq.Size,
-			MimeType: attReq.MimeType,
+			SessionID: req.SessionID,
+			FileName:  attReq.FileName,
+			FilePath:  path,
+			FileSize:  attReq.Size,
+			MimeType:  attReq.MimeType,
 		})
 	}
 
 	mail := &domain.Mail{
+		SessionID:   req.SessionID,
 		SenderID:    senderID,
 		Subject:     req.Subject,
 		Content:     req.Content,
@@ -77,6 +79,7 @@ func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.S
 	addRecipients := func(ids []string, rType string) {
 		for _, id := range ids {
 			recipients = append(recipients, domain.MailRecipient{
+				SessionID:   req.SessionID,
 				RecipientID: id,
 				Type:        rType,
 				Status:      "unread",
@@ -94,27 +97,27 @@ func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.S
 		return nil, err
 	}
 
-	// Broadcast notification: target_user_ids
+	// Broadcast notification: target_user_ids (Maybe include session in notification too?)
 	var targetIDs []string
 	for _, r := range mail.Recipients {
 		targetIDs = append(targetIDs, r.RecipientID)
 	}
-	// Format: NEW_MAIL:comma_separated_ids
-	s.msgChan <- "NEW_MAIL:" + strings.Join(targetIDs, ",")
+	// Format: NEW_MAIL:session_id:comma_separated_ids
+	s.msgChan <- "NEW_MAIL:" + req.SessionID + ":" + strings.Join(targetIDs, ",")
 
 	return mail, nil
 }
 
-func (s *MailService) GetInbox(ctx context.Context, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error) {
-	return s.repo.GetInbox(ctx, userID, page, pageSize, query)
+func (s *MailService) GetInbox(ctx context.Context, sessionID, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error) {
+	return s.repo.GetInbox(ctx, sessionID, userID, page, pageSize, query)
 }
 
-func (s *MailService) GetSent(ctx context.Context, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error) {
-	return s.repo.GetSent(ctx, userID, page, pageSize, query)
+func (s *MailService) GetSent(ctx context.Context, sessionID, userID string, page, pageSize int, query string) ([]domain.Mail, int64, error) {
+	return s.repo.GetSent(ctx, sessionID, userID, page, pageSize, query)
 }
 
-func (s *MailService) ReadMail(ctx context.Context, userID, mailID string) (*domain.Mail, error) {
-	mail, err := s.repo.GetByID(ctx, mailID)
+func (s *MailService) ReadMail(ctx context.Context, sessionID, userID, mailID string) (*domain.Mail, error) {
+	mail, err := s.repo.GetByID(ctx, sessionID, mailID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +129,8 @@ func (s *MailService) ReadMail(ctx context.Context, userID, mailID string) (*dom
 	return mail, nil
 }
 
-func (s *MailService) DeleteMail(ctx context.Context, userID, mailID string) error {
-	mail, err := s.repo.GetByID(ctx, mailID)
+func (s *MailService) DeleteMail(ctx context.Context, sessionID, userID, mailID string) error {
+	mail, err := s.repo.GetByID(ctx, sessionID, mailID)
 	if err != nil {
 		return err
 	}
@@ -141,6 +144,6 @@ func (s *MailService) DeleteMail(ctx context.Context, userID, mailID string) err
 	return s.repo.UpdateStatus(ctx, mailID, userID, "deleted")
 }
 
-func (s *MailService) GetAttachment(ctx context.Context, attachmentID string) (*domain.Attachment, error) {
-	return s.repo.GetAttachmentByID(ctx, attachmentID)
+func (s *MailService) GetAttachment(ctx context.Context, sessionID, attachmentID string) (*domain.Attachment, error) {
+	return s.repo.GetAttachmentByID(ctx, sessionID, attachmentID)
 }

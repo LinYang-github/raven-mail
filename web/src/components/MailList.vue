@@ -1,7 +1,9 @@
 <template>
   <div class="mail-list">
     <div class="header">
-      <span class="title">{{ title }}</span>
+      <div class="header-left">
+        <span class="title">{{ title }}</span>
+      </div>
       <div class="actions">
         <el-button circle size="small" @click="$emit('refresh')">
           <el-icon><Refresh /></el-icon>
@@ -45,7 +47,13 @@
           </div>
         </div>
         
-        <div class="preview">{{ mail.content }}</div>
+        <div class="preview">
+          <span v-if="mail.content_type === 'onlyoffice'" class="office-label">
+            <el-icon style="vertical-align: middle; margin-right: 4px;"><Document /></el-icon>
+            在线正文
+          </span>
+          <span v-else>{{ mail.content || '(无内容)' }}</span>
+        </div>
 
         <el-button 
           type="danger" 
@@ -85,6 +93,7 @@ const handleSearch = () => {
     emit('search', searchQuery.value)
   }, 500)
 }
+
 </script>
 
 <style scoped>
@@ -109,6 +118,12 @@ const handleSearch = () => {
   font-size: 15px;
   font-weight: 700;
   color: #1a1a1a;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .search-bar {
@@ -210,6 +225,16 @@ const handleSearch = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   height: 18px; /* Force single line height */
+}
+
+.office-label {
+  color: #409EFF;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  background: #f0f7ff;
+  padding: 0 6px;
+  border-radius: 4px;
 }
 
 .delete-btn {

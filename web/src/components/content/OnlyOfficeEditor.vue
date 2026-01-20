@@ -11,6 +11,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { Loading } from '@element-plus/icons-vue'
+import { userStore } from '../../store/user'
 
 const props = defineProps(['modelValue', 'mailId'])
 const emit = defineEmits(['update:modelValue'])
@@ -32,29 +33,31 @@ const loadScript = () => {
   })
 }
 
-const docKey = ref(`mail-${props.mailId || 'new'}-${Math.random().toString(36).substring(7)}`)
+// Key 中包含 SessionID，彻底物理隔离缓存
+const docKey = ref(`s-${userStore.sessionId}-m-${props.mailId || 'new'}-${Math.random().toString(36).substring(7)}`)
 
 const initEditor = async () => {
   await loadScript()
   
-  // 如果 ONLYOFFICE 在 Docker 中运行，可能需要使用 host.docker.internal 才能访问宿主机
-  const effectiveBackendUrl = backendUrl // 可以在这里手动修改为映射后的 IP
+  const effectiveBackendUrl = backendUrl
   
   const config = {
     document: {
       fileType: "docx",
       key: docKey.value,
       title: "文电正文.docx",
-      url: `${effectiveBackendUrl}/api/v1/onlyoffice/template?key=${docKey.value}`, 
+      // URL 携带 session_id 参数
+      url: `${effectiveBackendUrl}/api/v1/onlyoffice/template?key=${docKey.value}&session_id=${userStore.sessionId}`, 
     },
     documentType: "word",
     editorConfig: {
       mode: "edit",
-      callbackUrl: `${effectiveBackendUrl}/api/v1/onlyoffice/callback`,
+      // Callback 携带 session_id 参数，方便后端保存到正确目录
+      callbackUrl: `${effectiveBackendUrl}/api/v1/onlyoffice/callback?session_id=${userStore.sessionId}`,
       lang: "zh",
       user: {
-        id: "user-123",
-        name: "红方-01"
+        id: userStore.id,
+        name: userStore.name
       },
       customization: {
         autosave: true,

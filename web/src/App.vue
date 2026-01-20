@@ -45,9 +45,9 @@ const searchQuery = ref('')
 
 const listTitle = computed(() => currentView.value === 'inbox' ? '收件箱' : '已发送')
 
-// Watch user change to refetch
-watch(() => userStore.id, (newId) => {
-  console.log('User changed to', newId)
+// Watch user or session change to refetch
+watch([() => userStore.id, () => userStore.sessionId], ([newId, newSession], [oldId, oldSession]) => {
+  console.log('Context changed:', { userId: newId, sessionId: newSession })
   // Reset view
   selectedMail.value = null
   isComposing.value = false

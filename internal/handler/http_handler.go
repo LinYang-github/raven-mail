@@ -19,14 +19,18 @@ import (
 )
 
 type MailHandler struct {
-	service ports.MailService
-	storage ports.StorageService // Need storage to download files
+	service         ports.MailService
+	storage         ports.StorageService
+	OnlyOfficeHost  string
+	DefaultSenderID string
 }
 
-func NewMailHandler(service ports.MailService, storage ports.StorageService) *MailHandler {
+func NewMailHandler(service ports.MailService, storage ports.StorageService, onlyOfficeHost string, defaultSenderID string) *MailHandler {
 	return &MailHandler{
-		service: service,
-		storage: storage,
+		service:         service,
+		storage:         storage,
+		OnlyOfficeHost:  onlyOfficeHost,
+		DefaultSenderID: defaultSenderID,
 	}
 }
 
@@ -61,7 +65,13 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 		})
 	}
 
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
 	req := ports.SendMailRequest{
+		SessionID:   sessionID,
 		Subject:     subject,
 		Content:     content,
 		ContentType: contentType,
@@ -74,7 +84,7 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 	// Mock Sender ID (In real app, get from Context/Token)
 	senderID := c.Query("user_id") // Temporary for simulation
 	if senderID == "" {
-		senderID = "user-123"
+		senderID = h.DefaultSenderID
 	}
 
 	mail, err := h.service.SendMail(c.Request.Context(), senderID, req)
@@ -92,13 +102,18 @@ func (h *MailHandler) GetInbox(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	mails, total, err := h.service.GetInbox(c.Request.Context(), userID, page, pageSize, query)
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
+	mails, total, err := h.service.GetInbox(c.Request.Context(), sessionID, userID, page, pageSize, query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": mails, "total": total, "page": page, "page_size": pageSize})
+	c.JSON(http.StatusOK, gin.H{"data": mails, "total": total, "page": page, "page_size": pageSize, "session_id": sessionID})
 }
 
 func (h *MailHandler) GetSent(c *gin.Context) {
@@ -107,20 +122,29 @@ func (h *MailHandler) GetSent(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	mails, total, err := h.service.GetSent(c.Request.Context(), userID, page, pageSize, query)
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
+	mails, total, err := h.service.GetSent(c.Request.Context(), sessionID, userID, page, pageSize, query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": mails, "total": total, "page": page, "page_size": pageSize})
+	c.JSON(http.StatusOK, gin.H{"data": mails, "total": total, "page": page, "page_size": pageSize, "session_id": sessionID})
 }
 
 func (h *MailHandler) DeleteMail(c *gin.Context) {
 	id := c.Param("id")
 	userID := c.Query("user_id") // In real app, from context
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
 
-	if err := h.service.DeleteMail(c.Request.Context(), userID, id); err != nil {
+	if err := h.service.DeleteMail(c.Request.Context(), sessionID, userID, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -131,8 +155,12 @@ func (h *MailHandler) DeleteMail(c *gin.Context) {
 func (h *MailHandler) GetMail(c *gin.Context) {
 	id := c.Param("id")
 	userID := c.Query("user_id")
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
 
-	mail, err := h.service.ReadMail(c.Request.Context(), userID, id)
+	mail, err := h.service.ReadMail(c.Request.Context(), sessionID, userID, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -154,7 +182,12 @@ func (h *MailHandler) DownloadAttachment(c *gin.Context) {
 		return
 	}
 
-	att, err := h.service.GetAttachment(c.Request.Context(), id)
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
+	att, err := h.service.GetAttachment(c.Request.Context(), sessionID, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Attachment not found"})
 		return
@@ -220,8 +253,16 @@ func filterEmpty(s []string) []string {
 
 func (h *MailHandler) ServeOnlyOfficeTemplate(c *gin.Context) {
 	key := c.Query("key")
-	// 从专门的存储目录读取，而不是模板目录
-	filePath := fmt.Sprintf("./data/docs/%s.docx", key)
+	sessionID := c.Query("session_id") // ONLYOFFICE components will pass this via query
+	if sessionID == "" {
+		sessionID = c.GetHeader("X-Session-ID")
+	}
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
+	// 从针对场次隔离的数据存储目录读取
+	filePath := fmt.Sprintf("./data/%s/docs/%s.docx", sessionID, key)
 
 	fmt.Printf("[OnlyOffice] Document requested for key: %s\n", key)
 
@@ -243,9 +284,8 @@ func (h *MailHandler) OnlyOfficeForceSave(c *gin.Context) {
 		return
 	}
 
-	// 从环境变量或配置中获取 ONLYOFFICE 服务器地址，此处暂用 VITE 匹配的物理 IP 默认值
-	onlyofficeHost := "192.168.106.129:8090"
-	cmdURL := fmt.Sprintf("http://%s/coauthoring/CommandService.ashx", onlyofficeHost)
+	// 从配置中获取 ONLYOFFICE 服务器地址
+	cmdURL := fmt.Sprintf("http://%s/coauthoring/CommandService.ashx", h.OnlyOfficeHost)
 
 	payload := map[string]interface{}{
 		"c":   "forcesave",
@@ -255,8 +295,8 @@ func (h *MailHandler) OnlyOfficeForceSave(c *gin.Context) {
 	jsonPayload, _ := json.Marshal(payload)
 	resp, err := http.Post(cmdURL, "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		fmt.Printf("[OnlyOffice] ForceSave trigger failed: %v\n", err)
-		c.JSON(500, gin.H{"error": err.Error()})
+		fmt.Printf("[OnlyOffice] ForceSave trigger failed (check ONLYOFFICE_HOST): %v\n", err)
+		c.JSON(200, gin.H{"error": 1, "message": err.Error()})
 		return
 	}
 	defer resp.Body.Close()
@@ -280,7 +320,12 @@ func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
 	if status == 2 || status == 6 {
 		downloadURL := body["url"].(string)
 		key := body["key"].(string)
-		fmt.Printf("[OnlyOffice] Saving document (status %v): %s, URL: %s\n", status, key, downloadURL)
+		sessionID := c.Query("session_id")
+		if sessionID == "" {
+			sessionID = "default"
+		}
+
+		fmt.Printf("[OnlyOffice] Saving document (status %v): %s, URL: %s, Session: %s\n", status, key, downloadURL, sessionID)
 
 		// 下载文件
 		resp, err := http.Get(downloadURL)
@@ -291,11 +336,13 @@ func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
 		}
 		defer resp.Body.Close()
 
-		// 确保数据存储目录存在
-		os.MkdirAll("./data/docs", 0755)
+		// 确保针对场次的数据存储目录存在
+		storageDir := fmt.Sprintf("./data/%s/docs", sessionID)
+		os.MkdirAll(storageDir, 0755)
 
-		// 保存到专门的文档存储目录
-		out, err := os.Create(fmt.Sprintf("./data/docs/%s.docx", key))
+		// 保存到针对场次隔离的文档存储目录
+		filePath := filepath.Join(storageDir, fmt.Sprintf("%s.docx", key))
+		out, err := os.Create(filePath)
 		if err != nil {
 			fmt.Printf("[OnlyOffice] Create file failed: %v\n", err)
 			c.JSON(200, gin.H{"error": 1})
@@ -304,7 +351,7 @@ func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
 		defer out.Close()
 
 		io.Copy(out, resp.Body)
-		fmt.Printf("[OnlyOffice] Document %s (status %v) saved successfully to data/docs\n", key, status)
+		fmt.Printf("[OnlyOffice] Document %s (status %v) saved successfully to %s\n", key, status, filePath)
 	}
 
 	c.JSON(200, gin.H{"error": 0})

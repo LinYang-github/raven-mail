@@ -10,6 +10,7 @@ import (
 // Mail represents an email entity
 type Mail struct {
 	ID           string         `gorm:"primaryKey;type:uuid" json:"id"`
+	SessionID    string         `gorm:"index;not null;default:'default'" json:"session_id"`
 	SenderID     string         `gorm:"index;not null" json:"sender_id"`
 	SenderStatus string         `gorm:"type:varchar(20);default:'normal'" json:"-"` // normal, deleted
 	Subject      string         `gorm:"not null" json:"subject"`
@@ -28,9 +29,10 @@ type Mail struct {
 type MailRecipient struct {
 	ID          string     `gorm:"primaryKey;type:uuid" json:"id"`
 	MailID      string     `gorm:"index;not null" json:"mail_id"`
-	RecipientID string     `gorm:"index;not null" json:"recipient_id"`              // UserID or GroupID
-	Type        string     `gorm:"type:varchar(10);default:'to'" json:"type"`       // to, cc, bcc
-	Status      string     `gorm:"type:varchar(20);default:'unread'" json:"status"` // unread, read, deleted
+	SessionID   string     `gorm:"index;not null;default:'default'" json:"session_id"` // Redundant but good for indexing inbox
+	RecipientID string     `gorm:"index;not null" json:"recipient_id"`                 // UserID or GroupID
+	Type        string     `gorm:"type:varchar(10);default:'to'" json:"type"`          // to, cc, bcc
+	Status      string     `gorm:"type:varchar(20);default:'unread'" json:"status"`    // unread, read, deleted
 	ReadAt      *time.Time `json:"read_at,omitempty"`
 }
 
@@ -38,6 +40,7 @@ type MailRecipient struct {
 type Attachment struct {
 	ID        string    `gorm:"primaryKey;type:uuid" json:"id"`
 	MailID    string    `gorm:"index;not null" json:"mail_id"`
+	SessionID string    `gorm:"index;not null;default:'default'" json:"session_id"`
 	FileName  string    `gorm:"not null" json:"file_name"`
 	FilePath  string    `gorm:"not null" json:"file_path"` // Path in object storage or simple FS
 	FileSize  int64     `json:"file_size"`

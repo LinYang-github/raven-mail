@@ -34,9 +34,12 @@ renderWithQiankun({
   mount(props) {
     console.log('[raven-mail] mount', props)
     
-    // Sync initial user
+    // Sync initial state
     if (props.user) {
-      userStore.setUser(props.user.id || 'user-123', props.user.name)
+      userStore.setUser(props.user.id || '', props.user.name || '')
+    }
+    if (props.sessionId) {
+      userStore.setSession(props.sessionId)
     }
 
     // Capture fetchUsers function
@@ -47,12 +50,15 @@ renderWithQiankun({
     // Start Real-time Notifications
     userStore.initNotifications()
 
-    // Sync state changes
+    // Sync state changes from host
     if (props.onGlobalStateChange) {
       props.onGlobalStateChange((state, prev) => {
-        console.log('[raven-mail] state change', state)
+        console.log('[raven-mail] host state change', state)
         if (state.user) {
           userStore.setUser(state.user.id, state.user.name)
+        }
+        if (state.sessionId) {
+          userStore.setSession(state.sessionId)
         }
       }, true) // fireImmediately: true
     }

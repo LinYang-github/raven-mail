@@ -2,7 +2,8 @@ import { registerMicroApps, start, initGlobalState } from 'qiankun';
 
 // 初始状态
 const state = {
-    user: { name: '红方-01', id: 'user-123', role: 'RED' }
+    user: { name: '红方-01', id: 'user-123', role: 'RED' },
+    sessionId: 'default'
 };
 
 const allUsersInDirectory = [
@@ -41,6 +42,7 @@ const actions = initGlobalState(state);
 actions.onGlobalStateChange((newState) => {
     console.log('[host] state changed', newState);
     state.user = newState.user;
+    state.sessionId = newState.sessionId;
 });
 
 // 1. 定义子应用
@@ -53,6 +55,7 @@ const apps = [
     props: {
         token: 'demo-host-token-xyz',
         user: state.user,
+        sessionId: state.sessionId,
         // 关键点：将当前的 role 闭包进去或通过 state 实时获取
         fetchUsers: (query) => fetchUsersMockByRole(query, state.user)
     }
@@ -94,6 +97,15 @@ if (selector) {
         
         console.log('[host] switching user to:', newUser);
         actions.setGlobalState({ user: newUser });
+    });
+}
+
+const sessionSelector = document.getElementById('session-select');
+if (sessionSelector) {
+    sessionSelector.addEventListener('change', (e) => {
+        const sid = e.target.value;
+        console.log('[host] switching session to:', sid);
+        actions.setGlobalState({ sessionId: sid });
     });
 }
 

@@ -120,7 +120,7 @@
 
 <script setup>
 import { reactive, ref, onMounted, watch, onBeforeUnmount } from 'vue'
-import { sendMail } from '../services/api'
+import { sendMail, triggerForceSave } from '../services/api'
 import { userStore } from '../store/user'
 import { EditorDriver } from './content'
 import { ElMessage } from 'element-plus'
@@ -214,8 +214,9 @@ const handleSubmit = async () => {
   // ONLYOFFICE 模式下，发送前强行触发一次服务端保存
   if (isOnlyOffice && form.content) {
     try {
-      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/onlyoffice/forcesave?key=${form.content}`, { method: 'POST' })
-      // 给一点缓冲区让 ONLYOFFICE 完成回调（通常 1-2 秒足够，比 10 秒好得多）
+      // 使用统一的 API 封装
+      await triggerForceSave(form.content)
+      // 给一点缓冲区让 ONLYOFFICE 完成回调
       await new Promise(resolve => setTimeout(resolve, 1500))
     } catch (err) {
       console.warn('[OnlyOffice] Force save trigger failed', err)

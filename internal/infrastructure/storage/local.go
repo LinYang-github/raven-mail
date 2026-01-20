@@ -21,11 +21,14 @@ func NewLocalStorage(baseDir string) (*LocalStorage, error) {
 	return &LocalStorage{BaseDir: baseDir}, nil
 }
 
-func (s *LocalStorage) UploadFile(ctx context.Context, fileName string, content io.Reader) (string, error) {
+func (s *LocalStorage) UploadFile(ctx context.Context, sessionID, fileName string, content io.Reader) (string, error) {
 	// Generate unique path
-	// Structure: YYYY/MM/DD/uuid-filename
+	// Structure: {session_id}/YYYY/MM/DD/uuid-filename
+	if sessionID == "" {
+		sessionID = "default"
+	}
 	now := time.Now()
-	subDir := filepath.Join(now.Format("2006"), now.Format("01"), now.Format("02"))
+	subDir := filepath.Join(sessionID, now.Format("2006"), now.Format("01"), now.Format("02"))
 	fullDir := filepath.Join(s.BaseDir, subDir)
 
 	if err := os.MkdirAll(fullDir, 0755); err != nil {

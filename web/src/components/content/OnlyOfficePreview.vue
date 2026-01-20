@@ -33,6 +33,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { Loading, FullScreen, Aim } from '@element-plus/icons-vue'
+import { userStore } from '../../store/user'
 
 const props = defineProps(['content', 'title'])
 const docTitle = ref(props.title)
@@ -97,9 +98,9 @@ const initViewer = async () => {
     type: "desktop", 
     document: {
       fileType: "docx",
-      key: props.content + "_v" + Date.now(), 
+      key: `v-${userStore.sessionId}-${props.content}-${Date.now()}`, 
       title: "文电正文.docx",
-      url: `${backendUrl}/api/v1/onlyoffice/template?key=${props.content}`,
+      url: `${backendUrl}/api/v1/onlyoffice/template?key=${props.content}&session_id=${userStore.sessionId}`,
     },
     documentType: "word",
     editorConfig: {

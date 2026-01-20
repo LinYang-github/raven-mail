@@ -20,22 +20,23 @@ func (r *MailRepository) Create(ctx context.Context, mail *domain.Mail) error {
 	return r.db.WithContext(ctx).Create(mail).Error
 }
 
-func (r *MailRepository) GetByID(ctx context.Context, id string) (*domain.Mail, error) {
+func (r *MailRepository) GetByID(ctx context.Context, sessionID, id string) (*domain.Mail, error) {
 	var mail domain.Mail
-	if err := r.db.WithContext(ctx).Preload("Attachments").Preload("Recipients").First(&mail, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Attachments").Preload("Recipients").
+		Where("id = ? AND session_id = ?", id, sessionID).First(&mail).Error; err != nil {
 		return nil, err
 	}
 	return &mail, nil
 }
 
-func (r *MailRepository) GetInbox(ctx context.Context, recipientID string, page, pageSize int, queryStr string) ([]domain.Mail, int64, error) {
+func (r *MailRepository) GetInbox(ctx context.Context, sessionID, recipientID string, page, pageSize int, queryStr string) ([]domain.Mail, int64, error) {
 	var mails []domain.Mail
 	var total int64
 
 	// Join with recipients table
 	query := r.db.WithContext(ctx).
 		Joins("JOIN mail_recipients ON mail_recipients.mail_id = mails.id").
-		Where("mail_recipients.recipient_id = ? AND mail_recipients.status != 'deleted'", recipientID)
+		Where("mail_recipients.session_id = ? AND mail_recipients.recipient_id = ? AND mail_recipients.status != 'deleted'", sessionID, recipientID)
 
 	if queryStr != "" {
 		like := "%" + queryStr + "%"
@@ -55,11 +56,11 @@ func (r *MailRepository) GetInbox(ctx context.Context, recipientID string, page,
 	return mails, total, nil
 }
 
-func (r *MailRepository) GetSent(ctx context.Context, senderID string, page, pageSize int, queryStr string) ([]domain.Mail, int64, error) {
+func (r *MailRepository) GetSent(ctx context.Context, sessionID, senderID string, page, pageSize int, queryStr string) ([]domain.Mail, int64, error) {
 	var mails []domain.Mail
 	var total int64
 
-	query := r.db.WithContext(ctx).Where("sender_id = ? AND (sender_status IS NULL OR sender_status != 'deleted')", senderID)
+	query := r.db.WithContext(ctx).Where("session_id = ? AND sender_id = ? AND (sender_status IS NULL OR sender_status != 'deleted')", sessionID, senderID)
 
 	if queryStr != "" {
 		like := "%" + queryStr + "%"
@@ -91,9 +92,9 @@ func (r *MailRepository) DeleteForSender(ctx context.Context, mailID string) err
 		Update("sender_status", "deleted").Error
 }
 
-func (r *MailRepository) GetAttachmentByID(ctx context.Context, id string) (*domain.Attachment, error) {
+func (r *MailRepository) GetAttachmentByID(ctx context.Context, sessionID, id string) (*domain.Attachment, error) {
 	var att domain.Attachment
-	if err := r.db.WithContext(ctx).First(&att, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ? AND session_id = ?", id, sessionID).First(&att).Error; err != nil {
 		return nil, err
 	}
 	return &att, nil
