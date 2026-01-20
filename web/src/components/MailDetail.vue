@@ -20,7 +20,7 @@
         </div>
       </div>
 
-      <div class="detail-body">
+      <div class="detail-body" :class="{ 'no-padding': mail.content_type === 'onlyoffice' }">
         <component :is="getPreviewDriver(mail.content_type)" :content="mail.content" />
       </div>
 
@@ -169,6 +169,13 @@ const formatDate = (dateStr) => {
   padding: 40px;
   overflow-y: auto;
   background: #fff;
+  display: flex; /* Ensure child can fill height */
+  flex-direction: column;
+}
+
+.detail-body.no-padding {
+  padding: 0;
+  overflow: hidden; /* 同时隐藏 X 和 Y 轴滚动条 */
 }
 
 .body-text {

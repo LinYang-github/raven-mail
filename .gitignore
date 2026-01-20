@@ -57,9 +57,10 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
-# Local Storage (Attachments)
+# Local Storage (Attachments & Docs)
 /uploads/
 /storage/
+/data/
 
 # Environment Variables
 .env

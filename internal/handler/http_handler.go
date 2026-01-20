@@ -220,14 +220,15 @@ func filterEmpty(s []string) []string {
 
 func (h *MailHandler) ServeOnlyOfficeTemplate(c *gin.Context) {
 	key := c.Query("key")
-	filePath := fmt.Sprintf("./templates/%s.docx", key)
+	// 从专门的存储目录读取，而不是模板目录
+	filePath := fmt.Sprintf("./data/docs/%s.docx", key)
 
-	fmt.Printf("[OnlyOffice] Template requested for key: %s\n", key)
+	fmt.Printf("[OnlyOffice] Document requested for key: %s\n", key)
 
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-	c.Header("Content-Disposition", "attachment; filename=template.docx")
+	c.Header("Content-Disposition", "attachment; filename=document.docx")
 
-	// 如果该 Key 对应的文件已存在，则返回新文件，否则返回空模板
+	// 如果该 Key 对应的已保存文件存在，则返回，否则返回原始空白模板
 	if _, err := os.Stat(filePath); err == nil {
 		c.File(filePath)
 	} else {
@@ -242,9 +243,9 @@ func (h *MailHandler) OnlyOfficeForceSave(c *gin.Context) {
 		return
 	}
 
-	// ONLYOFFICE Command Service 地址
-	// 假设命令服务地址为 ONLYOFFICE 服务器地址加上 /coauthoring/CommandService.ashx
-	cmdURL := "http://192.168.106.129:8090/coauthoring/CommandService.ashx"
+	// 从环境变量或配置中获取 ONLYOFFICE 服务器地址，此处暂用 VITE 匹配的物理 IP 默认值
+	onlyofficeHost := "192.168.106.129:8090"
+	cmdURL := fmt.Sprintf("http://%s/coauthoring/CommandService.ashx", onlyofficeHost)
 
 	payload := map[string]interface{}{
 		"c":   "forcesave",
@@ -274,11 +275,12 @@ func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
 	status := body["status"].(float64)
 	fmt.Printf("[OnlyOffice] Callback received. Status: %v\n", status)
 
-	// Status 2: Ready for saving
-	if status == 2 {
+	// Status 2: Ready for saving (closed)
+	// Status 6: Being edited, but state saved (forcesave)
+	if status == 2 || status == 6 {
 		downloadURL := body["url"].(string)
 		key := body["key"].(string)
-		fmt.Printf("[OnlyOffice] Saving document: %s, URL: %s\n", key, downloadURL)
+		fmt.Printf("[OnlyOffice] Saving document (status %v): %s, URL: %s\n", status, key, downloadURL)
 
 		// 下载文件
 		resp, err := http.Get(downloadURL)
@@ -289,8 +291,11 @@ func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
 		}
 		defer resp.Body.Close()
 
-		// 保存到 templates 目录（生产环境应存入专门的存储服务）
-		out, err := os.Create(fmt.Sprintf("./templates/%s.docx", key))
+		// 确保数据存储目录存在
+		os.MkdirAll("./data/docs", 0755)
+
+		// 保存到专门的文档存储目录
+		out, err := os.Create(fmt.Sprintf("./data/docs/%s.docx", key))
 		if err != nil {
 			fmt.Printf("[OnlyOffice] Create file failed: %v\n", err)
 			c.JSON(200, gin.H{"error": 1})
@@ -299,7 +304,7 @@ func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
 		defer out.Close()
 
 		io.Copy(out, resp.Body)
-		fmt.Printf("[OnlyOffice] Document %s saved successfully\n", key)
+		fmt.Printf("[OnlyOffice] Document %s (status %v) saved successfully to data/docs\n", key, status)
 	}
 
 	c.JSON(200, gin.H{"error": 0})
