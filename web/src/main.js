@@ -4,7 +4,7 @@ import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import './style.css'
-import router from './router'
+import createRouterInstance from './router'
 
 import { renderWithQiankun, qiankunWindow } from 'vite-plugin-qiankun/dist/helper'
 
@@ -17,7 +17,7 @@ function render(props = {}) {
   app = createApp(App, { modules })
   
   app.use(ElementPlus)
-  app.use(router)
+  app.use(createRouterInstance()) // Create new router with current window.__RAVEN_ROUTE_BASE__
   
   // Register all icons globally
   for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
@@ -37,6 +37,9 @@ renderWithQiankun({
     console.log('[raven-mail] mount', props)
     
     // Sync initial state
+    if (props.routeBase) {
+      window.__RAVEN_ROUTE_BASE__ = props.routeBase
+    }
     if (props.user) {
       userStore.setUser(props.user.id || '', props.user.name || '')
     }

@@ -52,9 +52,9 @@ const replyTarget = ref(null)
 
 // 从路由推导当前视图
 const currentView = computed(() => {
-  if (route.path.startsWith('/mail/inbox')) return 'inbox'
-  if (route.path.startsWith('/mail/sent')) return 'sent'
-  if (route.path.startsWith('/mail/compose')) return 'compose'
+  if (route.path.includes('/inbox')) return 'inbox'
+  if (route.path.includes('/sent')) return 'sent'
+  if (route.path.includes('/compose')) return 'compose'
   return 'inbox'
 })
 
@@ -95,12 +95,12 @@ watch([currentView, () => userStore.id, () => userStore.sessionId], () => {
 })
 
 const setView = (view) => {
-  router.push(`/mail/${view}`)
+  router.push(`/${view}`)
 }
 
 const openCompose = () => {
   replyTarget.value = null
-  router.push('/mail/compose')
+  router.push('/compose')
 }
 
 const cancelCompose = () => {
@@ -114,7 +114,7 @@ const handleReply = (mode) => {
     mode: mode,
     mail: selectedMail.value
   }
-  router.push('/mail/compose')
+  router.push('/compose')
 }
 
 const fetchMails = async () => {
@@ -160,7 +160,7 @@ const handleDelete = async (id) => {
     fetchMails()
     
     if (route.params.id === id) {
-      router.push(`/mail/${currentView.value}`)
+      router.push(`/${currentView.value}`)
     }
   } catch (err) {
     if (err !== 'cancel') {
@@ -171,7 +171,7 @@ const handleDelete = async (id) => {
 }
 
 const selectMail = (mail) => {
-  router.push(`/mail/${currentView.value}/${mail.id}`)
+  router.push(`/${currentView.value}/${mail.id}`)
   
   if (currentView.value === 'inbox') {
     const r = mail.recipients?.find(rp => rp.recipient_id === userStore.id)
@@ -185,7 +185,7 @@ const selectMail = (mail) => {
 const handleComposeSuccess = () => {
   replyTarget.value = null
   ElMessage.success('发送成功')
-  router.push('/mail/sent')
+  router.push('/sent')
 }
 
 onMounted(() => {

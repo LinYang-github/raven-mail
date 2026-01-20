@@ -11,22 +11,19 @@ import { useRoute } from 'vue-router'
 import MailClient from './components/MailClient.vue'
 import ChatWidget from './components/ChatWidget.vue'
 
-const route = useRoute()
-
-// Determine capabilities based on modules prop OR route
 const props = defineProps({
   modules: { type: [Array, String], default: () => ['mail', 'im'] }
 })
 
-const showMail = computed(() => {
-  return route.path.startsWith('/mail')
-})
+const isEnabled = (moduleName) => {
+  if (Array.isArray(props.modules)) {
+    return props.modules.includes(moduleName)
+  }
+  return props.modules === moduleName
+}
 
-const showIM = computed(() => {
-  // IM is always enabled if in 'im' module OR if route is /mail (floating widget)
-  // Or simply: enable if route is /im OR /mail
-  return route.path.startsWith('/im') || route.path.startsWith('/mail') 
-})
+const showMail = computed(() => isEnabled('mail'))
+const showIM = computed(() => isEnabled('im'))
 </script>
 
 <style>

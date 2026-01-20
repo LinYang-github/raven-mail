@@ -65,33 +65,59 @@ actions.onGlobalStateChange((newState) => {
 });
 
 // 1. 定义子应用
+// 1. 定义子应用 - 拆分为三个独立注册的实例以支持不同的 Base Route
 const apps = [
   {
-    name: 'raven-mail', // 子应用名称
-    entry: SUBAPP_ENTRY, // 子应用开发环境地址
-    container: '#subapp-container', // 挂载容器 ID
-    activeRule: (location) => {
-        return location.pathname.startsWith('/mail') || location.pathname.startsWith('/im');
-    },
+    name: 'raven-mail',
+    entry: SUBAPP_ENTRY,
+    container: '#subapp-container',
+    activeRule: '/mail',
     props: {
         token: 'demo-host-token-xyz',
-        getGlobalState: () => state, // 为了让子应用获取最新状态
+        getGlobalState: () => state,
         onGlobalStateChange: (callback, fireImmediately) => actions.onGlobalStateChange(callback, fireImmediately),
-        ravenConfig: {
-            showReset: true,
-            showSidebar: true, // Only for mail
-            primaryColor: state.themeColor
-        },
-        // 关键点：将当前的 role 闭包进去或通过 state 实时获取
+        ravenConfig: { showReset: true, showSidebar: true, primaryColor: state.themeColor },
         fetchUsers: (query) => fetchUsersMockByRole(query, state.user),
-        // Dynamic modules based on route
-        get modules() {
-            if (window.location.pathname.startsWith('/im')) return ['im'];
-            if (window.location.pathname.startsWith('/mail')) return ['mail', 'im'];
-            return ['mail', 'im'];
-        }
+        
+        // Feature Flags & Config
+        modules: ['mail'],
+        routeBase: '/mail'
     }
   },
+  {
+    name: 'raven-im',
+    entry: SUBAPP_ENTRY,
+    container: '#subapp-container',
+    activeRule: '/im',
+    props: {
+        token: 'demo-host-token-xyz',
+        getGlobalState: () => state,
+        onGlobalStateChange: (callback, fireImmediately) => actions.onGlobalStateChange(callback, fireImmediately),
+        ravenConfig: { showReset: true, showSidebar: true, primaryColor: state.themeColor },
+        fetchUsers: (query) => fetchUsersMockByRole(query, state.user),
+        
+        // Feature Flags & Config
+        modules: ['im'],
+        routeBase: '/im'
+    }
+  },
+  {
+    name: 'raven-all',
+    entry: SUBAPP_ENTRY,
+    container: '#subapp-container',
+    activeRule: '/all',
+    props: {
+        token: 'demo-host-token-xyz',
+        getGlobalState: () => state,
+        onGlobalStateChange: (callback, fireImmediately) => actions.onGlobalStateChange(callback, fireImmediately),
+        ravenConfig: { showReset: true, showSidebar: true, primaryColor: state.themeColor },
+        fetchUsers: (query) => fetchUsersMockByRole(query, state.user),
+        
+        // Feature Flags & Config
+        modules: ['mail', 'im'],
+        routeBase: '/all'
+    }
+  }
 ];
 
 // 2. 注册子应用
