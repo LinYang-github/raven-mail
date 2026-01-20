@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -214,6 +217,94 @@ func filterEmpty(s []string) []string {
 	}
 	return r
 }
+
+func (h *MailHandler) ServeOnlyOfficeTemplate(c *gin.Context) {
+	key := c.Query("key")
+	filePath := fmt.Sprintf("./templates/%s.docx", key)
+
+	fmt.Printf("[OnlyOffice] Template requested for key: %s\n", key)
+
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+	c.Header("Content-Disposition", "attachment; filename=template.docx")
+
+	// 如果该 Key 对应的文件已存在，则返回新文件，否则返回空模板
+	if _, err := os.Stat(filePath); err == nil {
+		c.File(filePath)
+	} else {
+		c.File("./templates/empty.docx")
+	}
+}
+
+func (h *MailHandler) OnlyOfficeForceSave(c *gin.Context) {
+	key := c.Query("key")
+	if key == "" {
+		c.JSON(400, gin.H{"error": "missing key"})
+		return
+	}
+
+	// ONLYOFFICE Command Service 地址
+	// 假设命令服务地址为 ONLYOFFICE 服务器地址加上 /coauthoring/CommandService.ashx
+	cmdURL := "http://192.168.106.129:8090/coauthoring/CommandService.ashx"
+
+	payload := map[string]interface{}{
+		"c":   "forcesave",
+		"key": key,
+	}
+
+	jsonPayload, _ := json.Marshal(payload)
+	resp, err := http.Post(cmdURL, "application/json", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		fmt.Printf("[OnlyOffice] ForceSave trigger failed: %v\n", err)
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	fmt.Printf("[OnlyOffice] ForceSave triggered for key: %s\n", key)
+	c.JSON(200, gin.H{"error": 0, "message": "forcesave triggered"})
+}
+
+func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
+	var body map[string]interface{}
+	if err := c.BindJSON(&body); err != nil {
+		c.JSON(400, gin.H{"error": 1})
+		return
+	}
+
+	status := body["status"].(float64)
+	fmt.Printf("[OnlyOffice] Callback received. Status: %v\n", status)
+
+	// Status 2: Ready for saving
+	if status == 2 {
+		downloadURL := body["url"].(string)
+		key := body["key"].(string)
+		fmt.Printf("[OnlyOffice] Saving document: %s, URL: %s\n", key, downloadURL)
+
+		// 下载文件
+		resp, err := http.Get(downloadURL)
+		if err != nil {
+			fmt.Printf("[OnlyOffice] Download failed: %v\n", err)
+			c.JSON(200, gin.H{"error": 1})
+			return
+		}
+		defer resp.Body.Close()
+
+		// 保存到 templates 目录（生产环境应存入专门的存储服务）
+		out, err := os.Create(fmt.Sprintf("./templates/%s.docx", key))
+		if err != nil {
+			fmt.Printf("[OnlyOffice] Create file failed: %v\n", err)
+			c.JSON(200, gin.H{"error": 1})
+			return
+		}
+		defer out.Close()
+
+		io.Copy(out, resp.Body)
+		fmt.Printf("[OnlyOffice] Document %s saved successfully\n", key)
+	}
+
+	c.JSON(200, gin.H{"error": 0})
+}
+
 func (h *MailHandler) StreamNotifications(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")

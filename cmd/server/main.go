@@ -72,6 +72,9 @@ func main() {
 			mails.GET("/download", mailHandler.DownloadAttachment)
 			mails.GET("/events", mailHandler.StreamNotifications)
 		}
+		api.GET("/onlyoffice/template", mailHandler.ServeOnlyOfficeTemplate)
+		api.POST("/onlyoffice/callback", mailHandler.OnlyOfficeCallback)
+		api.POST("/onlyoffice/forcesave", mailHandler.OnlyOfficeForceSave)
 	}
 
 	addr := fmt.Sprintf(":%d", port)

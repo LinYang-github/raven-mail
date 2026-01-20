@@ -147,12 +147,26 @@ const searchCcUsers = async (query) => {
 }
 
 const handleSubmit = async () => {
-  if (form.toList.length === 0 || !form.subject || !form.content) {
+  const isOnlyOffice = (import.meta.env.VITE_MAIL_CONTENT_MODE === 'onlyoffice')
+  
+  if (form.toList.length === 0 || !form.subject || (!isOnlyOffice && !form.content)) {
     ElMessage.warning('请填写必要字段')
     return
   }
-  
+
   loading.value = true
+
+  // ONLYOFFICE 模式下，发送前强行触发一次服务端保存
+  if (isOnlyOffice && form.content) {
+    try {
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/onlyoffice/forcesave?key=${form.content}`, { method: 'POST' })
+      // 给一点缓冲区让 ONLYOFFICE 完成回调（通常 1-2 秒足够，比 10 秒好得多）
+      await new Promise(resolve => setTimeout(resolve, 1500))
+    } catch (err) {
+      console.warn('[OnlyOffice] Force save trigger failed', err)
+    }
+  }
+  
   try {
     const formData = new FormData()
     formData.append('to', form.toList.join(','))

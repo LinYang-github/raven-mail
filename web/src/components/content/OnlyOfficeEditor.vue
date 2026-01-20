@@ -20,6 +20,7 @@ const loading = ref(true)
 let docEditor = null
 
 const serverUrl = import.meta.env.VITE_ONLYOFFICE_SERVER || 'http://localhost:8090/'
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'
 
 const loadScript = () => {
   return new Promise((resolve) => {
@@ -31,56 +32,64 @@ const loadScript = () => {
   })
 }
 
+const docKey = ref(`mail-${props.mailId || 'new'}-${Math.random().toString(36).substring(7)}`)
+
 const initEditor = async () => {
   await loadScript()
+  
+  // 如果 ONLYOFFICE 在 Docker 中运行，可能需要使用 host.docker.internal 才能访问宿主机
+  const effectiveBackendUrl = backendUrl // 可以在这里手动修改为映射后的 IP
   
   const config = {
     document: {
       fileType: "docx",
-      key: `mail-${props.mailId || 'new'}-${Date.now()}`,
+      key: docKey.value,
       title: "文电正文.docx",
-      url: "", // In real case, this should be a link to the backend file
+      url: `${effectiveBackendUrl}/api/v1/onlyoffice/template?key=${docKey.value}`, 
     },
     documentType: "word",
     editorConfig: {
       mode: "edit",
-      callbackUrl: "http://localhost:8080/api/v1/onlyoffice/callback", // Backend callback
+      callbackUrl: `${effectiveBackendUrl}/api/v1/onlyoffice/callback`,
       lang: "zh",
       user: {
-        id: "current-user",
-        name: "当前用户"
+        id: "user-123",
+        name: "红方-01"
       },
       customization: {
         autosave: true,
         compactHeader: true,
-        toolbarNoTabs: true
+        toolbarNoTabs: false
       }
     },
     height: "100%",
     width: "100%"
   }
 
-  // Simulated: If it's a new mail, we might just show a "Mock" editor since we don't have a file server for docx yet
-  console.log('[OnlyOffice] Init config:', config)
+  console.log('[OnlyOffice] Initializing with server:', serverUrl)
   
-  setTimeout(() => {
+  try {
     loading.value = false
-    // docEditor = new window.DocsAPI.DocEditor(editorId, config)
+    if (window.DocsAPI) {
+      docEditor = new window.DocsAPI.DocEditor(editorId, config)
+      // 将 docKey 同步给父组件，作为“内容”标识，解决校验问题
+      emit('update:modelValue', docKey.value)
+    } else {
+      throw new Error('DocsAPI not found')
+    }
+  } catch (err) {
+    console.error('[OnlyOffice] Init failed:', err)
     const container = document.getElementById(editorId)
     if (container) {
       container.innerHTML = `
-        <div style="background:#f1f1f1; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; border: 2px dashed #ccc;">
-          <img src="https://www.onlyoffice.com/blog/wp-content/uploads/2021/05/docs-6-3-696x392.png" style="width: 200px; margin-bottom: 20px;" />
-          <p><b>ONLYOFFICE 模拟界面</b></p>
-          <p style="color: #666; font-size: 13px;">服务器地址: ${serverUrl}</p>
-          <p style="color: #909399; font-size: 12px; padding: 0 40px; text-align:center;">
-            生产环境下，此区域将通过 DocsAPI 挂载真实的文档编辑器。<br/>
-            当前模式识别为: ONLYOFFICE
-          </p>
+        <div style="background:#fff2f0; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; border: 2px dashed #ffccc7; color: #ff4d4f; padding: 20px; text-align:center;">
+          <p><b>ONLYOFFICE 服务连接失败</b></p>
+          <p style="font-size: 13px;">请检查浏览器是否能访问: <br/> ${serverUrl}web-apps/apps/api/documents/api.js</p>
+          <p style="font-size: 12px; color: #999;">错误信息: ${err.message}</p>
         </div>
       `
     }
-  }, 1000)
+  }
 }
 
 onMounted(() => {
