@@ -151,8 +151,8 @@ func (s *MailService) DeleteMail(ctx context.Context, sessionID, userID, mailID 
 }
 
 func (s *MailService) DeleteSession(ctx context.Context, sessionID string) error {
-	if sessionID == "" || sessionID == "default" {
-		return nil // Safety
+	if sessionID == "" {
+		return nil
 	}
 
 	// 1. Delete DB records

@@ -112,8 +112,8 @@ if (sessionSelector) {
 // 暴露重置场次接口
 window.resetSession = async () => {
     const sid = state.sessionId;
-    if (sid === 'default') {
-        alert('默认场次禁止重置');
+    if (!sid) {
+        alert('无有效场次 ID');
         return;
     }
     if (!confirm(`确定要重置场次 "${sid}" 吗？这将删除该场次下的所有邮件和文档数据。`)) {

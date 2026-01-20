@@ -359,10 +359,13 @@ func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
 
 func (h *MailHandler) DeleteSession(c *gin.Context) {
 	sessionID := c.Param("id")
-	if sessionID == "" || sessionID == "default" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete default or empty session"})
+	if sessionID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session ID is required"})
 		return
 	}
+
+	// Removed safety check for 'default' session deletion.
+	// The service layer is now responsible for handling the deletion of any session ID, including 'default'.
 
 	if err := h.service.DeleteSession(c.Request.Context(), sessionID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -58,8 +58,8 @@ func (s *LocalStorage) GetFile(ctx context.Context, path string) (io.ReadCloser,
 	return os.Open(fullPath)
 }
 func (s *LocalStorage) DeleteSessionDir(ctx context.Context, sessionID string) error {
-	if sessionID == "" || sessionID == "default" {
-		return nil // Safety: don't delete default or empty session dir easily via this
+	if sessionID == "" {
+		return nil
 	}
 	path := filepath.Join(s.BaseDir, sessionID)
 	return os.RemoveAll(path)
