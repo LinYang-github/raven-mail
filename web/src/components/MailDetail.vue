@@ -8,7 +8,7 @@
       <div class="detail-header">
         <h1 class="subject">{{ mail.subject }}</h1>
         <div class="meta">
-          <el-tag size="small" type="info">{{ new Date(mail.created_at).toLocaleString() }}</el-tag>
+          <el-tag size="small" type="info">{{ formatDate(mail.created_at) }}</el-tag>
         </div>
         
         <div class="sender-info">
@@ -88,6 +88,13 @@ const formatSize = (bytes) => {
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr)
+  const pad = (n) => n.toString().padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 </script>
 

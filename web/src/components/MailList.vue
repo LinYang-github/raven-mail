@@ -74,7 +74,8 @@ const searchQuery = ref('')
 
 const formatDate = (dateStr) => {
   const date = new Date(dateStr)
-  return `${date.getMonth() + 1}/${date.getDate()}`
+  const pad = (n) => n.toString().padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
 let timeout
@@ -88,7 +89,7 @@ const handleSearch = () => {
 
 <style scoped>
 .mail-list {
-  width: 300px; /* Reduced width slightly */
+  width: 320px; /* Increased to fit date */
   background: white;
   border-right: 1px solid #ebedf0;
   display: flex;
@@ -171,7 +172,7 @@ const handleSearch = () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+  max-width: 100px; /* Reduced to fit date */
 }
 
 .time {
