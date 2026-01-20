@@ -1,35 +1,39 @@
 # Raven Mail Module
 
-Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模块。它采用了微前端（Micro-Frontend）架构，旨在作为一个子应用无缝嵌入到更大的平台中，同时提供完整的邮件收发、附件管理以及多用户切换演示功能。
+Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模块。它采用了微前端（Micro-Frontend）架构，旨在作为一个子应用无缝嵌入到更大的平台中，同时提供完整的邮件收发、附件管理、**在线正文编辑（ONLYOFFICE）**以及深度集成特性。
 
 ## 🌟 核心特性
 
 - **完整邮件生命周期**：支持收件箱、已发送、邮件阅读、删除及搜索。
-- **现代化交互**：基于 Element Plus 的响应式设计，提供流畅的单页应用体验。
-- **强大的附件支持**：
-  - 支持多文件上传。
-  - 支持附件下载（解决中文乱码与 0B 下载问题）。
-  - **支持内联预览**：针对图片、PDF 等格式提供直接预览功能。
-- **微前端架构**：
-  - 完美适配 `qiankun`，提供标准的生命周期钩子。
-  - **多用户动态切换**：支持通过主应用全局状态（Global State）下发用户身份，子应用实时响应并刷新数据。
-- **可靠的后端方案**：基于 Go Gin 框架，配合 GORM 驱动的 SQLite 数据库，实现数据持久化。
+- **在线文档协同 (ONLYOFFICE)**：
+  - 支持通过 ONLYOFFICE 在线编辑文电正文。
+  - **场次隔离缓存**：不同演练场次之间的文档缓存物理隔离，确保数据安全。
+- **深度阅办追踪**：
+  - 发件人可实时查看附件及正文的“已读/未读”状态。
+  - 记录精确的首次回执（阅读）时间。
+- **微前端深度集成**：
+  - **统一寻址 (Deep Linking)**：支持微前端路由同步，支持通过 URL 直接定位文电。
+  - **环境自适应 (Theming)**：支持从宿主应用动态注入主题色和 UI 配置。
+  - **状态双向同步**：未读计数动态回传主应用侧边栏徽标。
+- **演练场次管理**：
+  - 支持多场次数据物理隔离。
+  - 提供“一键重置场次”功能，快速清理演练环境。
+- **强大的附件支持**：支持多文件上传、内联预览（图片/PDF）及下载。
 
 ## 🛠 技术栈
 
 ### 后端 (Backend)
 - **语言**: Go 1.21+
 - **框架**: Gin Web Framework
-- **ORM**: GORM
-- **数据库**: SQLite3
-- **存储**: 本地文件存储系统
+- **ORM**: GORM (SQLite3)
+- **文档方案**: ONLYOFFICE Document Server
+- **推送**: SSE (Server-Sent Events)
 
 ### 前端 (Frontend)
 - **框架**: Vue 3 (Composition API)
-- **构建工具**: Vite
+- **路由**: Vue Router 4 (微前端基准路径适配)
 - **UI 组件库**: Element Plus
-- **微前端能力**: `vite-plugin-qiankun`
-- **状态管理**: Vue Reactive Store
+- **微前端方案**: Qiankun (via `vite-plugin-qiankun`)
 
 ## 📂 项目结构
 
@@ -38,37 +42,33 @@ Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模
 ├── cmd/                # 后端入口
 ├── internal/           # 内部核心逻辑 (Domain, Service, Repo, Handler)
 ├── web/                # Vue 3 前端源码
+├── doc/                # 额外文档 (ONLYOFFICE 部署等)
 ├── examples/           # 示例应用
 │   └── qiankun-demo/   # qiankun 宿主应用示例
-├── raven.db            # SQLite 数据库文件
-└── uploads/            # 附件存储目录
+├── uploads/            # 附件及文档物理存储 (按 session_id 隔离)
+└── raven.db            # SQLite 数据库文件
 ```
 
 ## 🚀 快速开始
 
-### 1. 运行后端
+### 1. 运行核心依赖 (ONLYOFFICE)
+请参考 [ONLYOFFICE 部署指南](doc/ONLYOFFICE_DEPLOY.md) 启动 Document Server。
+
+### 2. 运行后端
 ```bash
 go run cmd/server/main.go
 ```
-后端默认运行在 `http://localhost:8080`。
-
-### 2. 运行前端 (独立模式)
-```bash
-cd web
-npm install
-npm run dev
-```
-前端默认运行在 `http://localhost:5173`。
 
 ### 3. 运行微前端 Demo (宿主+子应用)
-1. 确保前端和后端已启动。
+1. 启动前端子应用：
+   ```bash
+   cd web && npm install && npm run dev
+   ```
 2. 启动宿主应用：
-```bash
-cd examples/qiankun-demo
-npm install
-npm run dev
-```
-访问 `http://localhost:5174` (或其他 Vite 分配的端口)，即可查看 Raven 作为子应用运行的效果，并体验左下角的用户切换功能。
+   ```bash
+   cd examples/qiankun-demo && npm install && npm run dev
+   ```
+3. 访问宿主地址，体验**主题切换、用户切换、场次重置**以及**路由同步**等深度集成功能。
 
 ## 📄 许可证
 MIT License
