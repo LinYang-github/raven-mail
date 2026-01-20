@@ -1,3 +1,5 @@
+import { registerMicroApps, start, initGlobalState } from 'qiankun';
+
 // 初始配置：支持通过 URL 参数或环境变量覆盖地址
 const BACKEND_URL = window.localStorage.getItem('RAVEN_BACKEND_URL') || 'http://localhost:8080';
 const SUBAPP_ENTRY = window.localStorage.getItem('RAVEN_SUBAPP_ENTRY') || '//localhost:5173';
@@ -213,6 +215,19 @@ window.addEventListener('raven-new-mail', (event) => {
         });
     } else if (Notification.permission !== 'denied') {
         Notification.requestPermission();
+    }
+});
+
+// 监听即时消息
+window.addEventListener('raven-im-received', (event) => {
+    const msg = event.detail;
+    console.log(`[host] New IM from ${msg.sender_id}: ${msg.content}`);
+    
+    if (Notification.permission === 'granted') {
+        new Notification('新即时消息', {
+            body: `${msg.sender_id}: ${msg.content}`,
+            icon: '/favicon.ico'
+        });
     }
 });
 

@@ -23,9 +23,15 @@ Raven 采用了基于职责分离的层级架构设计，确保了前后端及�
 
 Raven 支持三种层级的正文编辑，通过驱动分发模式（Driver Pattern）动态加载：
 
-- **PlainText (Default)**：基于标准 Textarea 的纯文本编辑与渲染，无外部依赖。
-- **RichText (wangEditor)**：集成 wangEditor，支持标准 HTML 富文本能力，前端通过安全 v-html 及专属样式表实现高度一致的预览效果。
-- **OnlyOffice (Integrated)**：利用文档服务器实现真正的 Office 协同体验，提供最强的公文排版能力与 ForceSave 强制保存保障。
+- **多元化正文编辑模式**：
+  - **纯文本 (text)**：极简轻量，无外部依赖。
+  - **富文本 (rich)**：集成 **wangEditor**，支持专业排版、表格及引用。
+  - **在线文档 (onlyoffice)**：支持 Word 级编辑、预览。
+- **即时通讯 (Chat/IM)**：
+  - 支持跨角色的即时文字沟通。
+  - **SSE 实时推送**：基于高性能 SSE 链路，实现低延迟消息送达。
+  - **聊天记录持久化**：支持按演练场次隔离的消息历史。
+- **在线文档协同 (ONLYOFFICE)**：利用文档服务器实现真正的 Office 协同体验，提供最强的公文排版能力与 ForceSave 强制保存保障。
 
 ## 4. 在线正文编辑设计 (ONLYOFFICE Integration)
 
@@ -58,6 +64,11 @@ Raven 支持三种层级的正文编辑，通过驱动分发模式（Driver Patt
 ### 5.2 核心业务流
 - **阅读文电**：当当前用户（非发件人）点开文电时，系统更新 `mail_recipients.status` 为 `read`，并记录 `read_at`。
 - **统计面板**：发件人查看详情时，服务端预加载 `Recipients` 列表，前端通过 Popover 展示每个人的阅办详情。
+
+- **API 规范升级**：
+  - `POST /api/v1/im/send`: 发送即时消息。
+  - `GET /api/v1/im/history`: 获取聊天历史。
+- **SSE 负载优化**：事件推送改为 JSON 格式，支持 `MAIL` 和 `CHAT` 多种业务类型。
 
 ## 6. 用户角色与通讯逻辑 (IoC 模式)
 

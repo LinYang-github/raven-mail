@@ -13,6 +13,9 @@ export const userStore = reactive({
     showSidebar: true,    // 是否显示侧边栏
     primaryColor: '#409EFF' // 主题色
   },
+  chats: {}, // { userId: [messages] }
+  chatUnreads: {}, // { userId: count }
+  totalIMUnread: 0,
 
   setUser(id, name) {
     this.id = id
@@ -49,6 +52,15 @@ export const userStore = reactive({
     this.notifyHost()
   },
 
+  markIMRead(userId) {
+    this.chatUnreads[userId] = 0
+    this.recalculateIMUnread()
+  },
+
+  recalculateIMUnread() {
+    this.totalIMUnread = Object.values(this.chatUnreads).reduce((sum, count) => sum + count, 0)
+  },
+
   // SSE Notifications
   initNotifications() {
     if (this.eventSource) return;
@@ -59,26 +71,57 @@ export const userStore = reactive({
     this.eventSource = new EventSource(`${backendUrl}/api/v1/mails/events`)
     
     this.eventSource.onmessage = (event) => {
-      const msg = event.data
-      console.log('[raven-mail] Notification received:', msg)
-      
-      if (msg.startsWith('NEW_MAIL:')) {
-        const parts = msg.split(':')
-        const sessionId = parts[1]
-        const targetIds = parts[2].split(',')
-        
-        // 仅当场次匹配且用户在目标列表中时才提醒
-        if (sessionId === this.sessionId && targetIds.includes(this.id)) {
+      try {
+        const payload = JSON.parse(event.data)
+        console.log('[raven-mail] Notification received:', payload)
+
+        // 场次隔离校验
+        if (payload.session_id !== this.sessionId) return
+
+        // 是否发送给我的
+        if (payload.targets && !payload.targets.includes(this.id)) return
+
+        if (payload.type === 'MAIL') {
           this.unreadCount++
           this.notifyHost()
+          // 触发邮件更新提示
+          window.dispatchEvent(new CustomEvent('raven-mail-updated', { detail: payload.data }))
+        } else if (payload.type === 'CHAT') {
+          const msg = payload.data
+          const chatPartner = msg.sender_id === this.id ? msg.receiver_id : msg.sender_id
+          if (!this.chats[chatPartner]) this.chats[chatPartner] = []
+          this.chats[chatPartner].push(msg)
+          
+          // 如果消息是别人发给我的，且不在当前对话中（由 UI 层决定是否标记），累加未读
+          if (msg.sender_id !== this.id) {
+            this.chatUnreads[msg.sender_id] = (this.chatUnreads[msg.sender_id] || 0) + 1
+            this.recalculateIMUnread()
+          }
+
+          // 触发 IM 事件
+          window.dispatchEvent(new CustomEvent('raven-im-received', { detail: msg }))
+        }
+      } catch (e) {
+        // 兼容旧版或心跳及原始字符串
+        const msg = event.data
+        if (msg.startsWith('NEW_MAIL:')) {
+            const parts = msg.split(':')
+            const sessionId = parts[1]
+            const targetIds = parts[2].split(',')
+            if (sessionId === this.sessionId && targetIds.includes(this.id)) {
+              this.unreadCount++
+              this.notifyHost()
+            }
         }
       }
     }
 
     this.eventSource.onerror = (err) => {
       console.error('[raven-mail] SSE error:', err)
-      this.eventSource.close()
-      this.eventSource = null
+      if (this.eventSource) {
+        this.eventSource.close()
+        this.eventSource = null
+      }
       // Retry after 5s
       setTimeout(() => this.initNotifications(), 5000)
     }

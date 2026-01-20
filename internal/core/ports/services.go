@@ -17,6 +17,11 @@ type MailService interface {
 	// Notification stream
 	Subscribe() chan string
 	Unsubscribe(chan string)
+
+	// Chat / IM
+	SendChatMessage(ctx context.Context, sessionID, senderID, receiverID, content string) (*domain.ChatMessage, error)
+	GetChatHistory(ctx context.Context, sessionID, userA, userB string) ([]domain.ChatMessage, error)
+	MarkChatAsRead(ctx context.Context, sessionID, senderID, receiverID string) error
 }
 
 type StorageService interface {

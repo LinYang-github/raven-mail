@@ -28,3 +28,8 @@ export const triggerForceSave = (key) => api.post(`/onlyoffice/forcesave?key=${k
 export const deleteSession = (sessionId) => api.delete(`/sessions/${sessionId}`);
 export const getDownloadUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.id}&user_id=${getUserID()}`;
 export const getPreviewUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.id}&user_id=${getUserID()}&disposition=inline`;
+
+// Chat APIs
+export const sendChatMessage = (receiverId, content) => api.post(`/im/send?user_id=${getUserID()}`, { receiver_id: receiverId, content });
+export const getChatHistory = (otherId) => api.get(`/im/history?user_id=${getUserID()}&other_id=${otherId}`);
+export const markChatAsRead = (senderId) => api.post(`/im/read?user_id=${getUserID()}&sender_id=${senderId}`);

@@ -14,4 +14,8 @@ type MailRepository interface {
 	DeleteForSender(ctx context.Context, mailID string) error
 	DeleteSession(ctx context.Context, sessionID string) error
 	GetAttachmentByID(ctx context.Context, sessionID, id string) (*domain.Attachment, error)
+	// Chat / IM
+	CreateChatMessage(ctx context.Context, msg *domain.ChatMessage) error
+	GetChatHistory(ctx context.Context, sessionID, userA, userB string, limit int) ([]domain.ChatMessage, error)
+	MarkChatAsRead(ctx context.Context, sessionID, senderID, receiverID string) error
 }

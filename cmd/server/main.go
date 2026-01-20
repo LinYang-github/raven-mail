@@ -45,7 +45,7 @@ func main() {
 	}
 
 	// Auto Migrate
-	if err := db.AutoMigrate(&domain.Mail{}, &domain.MailRecipient{}, &domain.Attachment{}); err != nil {
+	if err := db.AutoMigrate(&domain.Mail{}, &domain.MailRecipient{}, &domain.Attachment{}, &domain.ChatMessage{}); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 
@@ -89,6 +89,12 @@ func main() {
 			mails.DELETE("/:id", mailHandler.DeleteMail)
 			mails.GET("/download", mailHandler.DownloadAttachment)
 			mails.GET("/events", mailHandler.StreamNotifications)
+		}
+		im := api.Group("/im")
+		{
+			im.POST("/send", mailHandler.SendChatMessage)
+			im.GET("/history", mailHandler.GetChatHistory)
+			im.POST("/read", mailHandler.MarkChatAsRead)
 		}
 		api.GET("/onlyoffice/template", mailHandler.ServeOnlyOfficeTemplate)
 		api.POST("/onlyoffice/callback", mailHandler.OnlyOfficeCallback)

@@ -48,6 +48,16 @@ type Attachment struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type ChatMessage struct {
+	ID         string    `gorm:"primaryKey" json:"id"`
+	SessionID  string    `gorm:"index" json:"session_id"`
+	SenderID   string    `gorm:"index" json:"sender_id"`
+	ReceiverID string    `gorm:"index" json:"receiver_id"` // User ID
+	Content    string    `json:"content"`
+	IsRead     bool      `gorm:"default:false" json:"is_read"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 // BeforeCreate hooks to set UUIDs
 func (m *Mail) BeforeCreate(tx *gorm.DB) (err error) {
 	if m.ID == "" {
@@ -66,6 +76,13 @@ func (mr *MailRecipient) BeforeCreate(tx *gorm.DB) (err error) {
 func (a *Attachment) BeforeCreate(tx *gorm.DB) (err error) {
 	if a.ID == "" {
 		a.ID = uuid.New().String()
+	}
+	return
+}
+
+func (cm *ChatMessage) BeforeCreate(tx *gorm.DB) (err error) {
+	if cm.ID == "" {
+		cm.ID = uuid.New().String()
 	}
 	return
 }

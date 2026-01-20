@@ -404,3 +404,85 @@ func (h *MailHandler) StreamNotifications(c *gin.Context) {
 		}
 	})
 }
+
+// Chat / IM Handlers
+
+func (h *MailHandler) SendChatMessage(c *gin.Context) {
+	var body struct {
+		ReceiverID string `json:"receiver_id"`
+		Content    string `json:"content"`
+	}
+	if err := c.BindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid body"})
+		return
+	}
+
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
+	senderID := c.Query("user_id")
+	if senderID == "" {
+		senderID = h.DefaultSenderID
+	}
+
+	msg, err := h.service.SendChatMessage(c.Request.Context(), sessionID, senderID, body.ReceiverID, body.Content)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, msg)
+}
+
+func (h *MailHandler) GetChatHistory(c *gin.Context) {
+	otherID := c.Query("other_id")
+	if otherID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "other_id required"})
+		return
+	}
+
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
+	userID := c.Query("user_id")
+	if userID == "" {
+		userID = h.DefaultSenderID
+	}
+
+	msgs, err := h.service.GetChatHistory(c.Request.Context(), sessionID, userID, otherID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, msgs)
+}
+
+func (h *MailHandler) MarkChatAsRead(c *gin.Context) {
+	senderID := c.Query("sender_id")
+	if senderID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "sender_id required"})
+		return
+	}
+
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
+	receiverID := c.Query("user_id")
+	if receiverID == "" {
+		receiverID = h.DefaultSenderID
+	}
+
+	if err := h.service.MarkChatAsRead(c.Request.Context(), sessionID, senderID, receiverID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}

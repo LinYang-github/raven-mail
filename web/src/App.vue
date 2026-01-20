@@ -25,6 +25,7 @@
         </router-view>
       </div>
     </div>
+    <ChatWidget />
   </div>
 </template>
 
@@ -35,6 +36,7 @@ import Sidebar from './components/Sidebar.vue'
 import MailList from './components/MailList.vue'
 import MailDetail from './components/MailDetail.vue'
 import ComposeView from './components/ComposeView.vue'
+import ChatWidget from './components/ChatWidget.vue'
 import { getInbox, getSent, getMail, deleteMail } from './services/api'
 import { userStore } from './store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'

@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"raven/internal/core/domain"
 	"raven/internal/core/ports"
-	"strings"
 	"time"
 )
 
@@ -99,13 +99,23 @@ func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.S
 		return nil, err
 	}
 
-	// Broadcast notification: target_user_ids (Maybe include session in notification too?)
+	// Broadcast notification
 	var targetIDs []string
 	for _, r := range mail.Recipients {
 		targetIDs = append(targetIDs, r.RecipientID)
 	}
-	// Format: NEW_MAIL:session_id:comma_separated_ids
-	s.msgChan <- "NEW_MAIL:" + req.SessionID + ":" + strings.Join(targetIDs, ",")
+
+	payload := map[string]interface{}{
+		"type":       "MAIL",
+		"session_id": req.SessionID,
+		"targets":    targetIDs,
+		"data": map[string]interface{}{
+			"id":        mail.ID,
+			"subject":   mail.Subject,
+			"sender_id": mail.SenderID,
+		},
+	}
+	s.broadcast(payload)
 
 	return mail, nil
 }
@@ -171,4 +181,45 @@ func (s *MailService) DeleteSession(ctx context.Context, sessionID string) error
 
 func (s *MailService) GetAttachment(ctx context.Context, sessionID, attachmentID string) (*domain.Attachment, error) {
 	return s.repo.GetAttachmentByID(ctx, sessionID, attachmentID)
+}
+
+func (s *MailService) SendChatMessage(ctx context.Context, sessionID, senderID, receiverID, content string) (*domain.ChatMessage, error) {
+	msg := &domain.ChatMessage{
+		SessionID:  sessionID,
+		SenderID:   senderID,
+		ReceiverID: receiverID,
+		Content:    content,
+		CreatedAt:  time.Now(),
+	}
+
+	if err := s.repo.CreateChatMessage(ctx, msg); err != nil {
+		return nil, err
+	}
+
+	// Broadcast
+	payload := map[string]interface{}{
+		"type":       "CHAT",
+		"session_id": sessionID,
+		"targets":    []string{receiverID},
+		"data":       msg,
+	}
+	s.broadcast(payload)
+
+	return msg, nil
+}
+
+func (s *MailService) GetChatHistory(ctx context.Context, sessionID, userA, userB string) ([]domain.ChatMessage, error) {
+	return s.repo.GetChatHistory(ctx, sessionID, userA, userB, 100)
+}
+
+func (s *MailService) MarkChatAsRead(ctx context.Context, sessionID, senderID, receiverID string) error {
+	return s.repo.MarkChatAsRead(ctx, sessionID, senderID, receiverID)
+}
+
+func (s *MailService) broadcast(payload interface{}) {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+	s.msgChan <- string(data)
 }

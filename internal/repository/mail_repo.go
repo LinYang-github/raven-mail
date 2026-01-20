@@ -120,3 +120,23 @@ func (r *MailRepository) GetAttachmentByID(ctx context.Context, sessionID, id st
 	}
 	return &att, nil
 }
+
+func (r *MailRepository) CreateChatMessage(ctx context.Context, msg *domain.ChatMessage) error {
+	return r.db.WithContext(ctx).Create(msg).Error
+}
+
+func (r *MailRepository) GetChatHistory(ctx context.Context, sessionID, userA, userB string, limit int) ([]domain.ChatMessage, error) {
+	var msgs []domain.ChatMessage
+	err := r.db.WithContext(ctx).
+		Where("session_id = ? AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))", sessionID, userA, userB, userB, userA).
+		Order("created_at asc").
+		Limit(limit).
+		Find(&msgs).Error
+	return msgs, err
+}
+
+func (r *MailRepository) MarkChatAsRead(ctx context.Context, sessionID, senderID, receiverID string) error {
+	return r.db.WithContext(ctx).Model(&domain.ChatMessage{}).
+		Where("session_id = ? AND sender_id = ? AND receiver_id = ? AND is_read = ?", sessionID, senderID, receiverID, false).
+		Update("is_read", true).Error
+}
