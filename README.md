@@ -5,9 +5,11 @@ Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模
 ## 🌟 核心特性
 
 - **完整邮件生命周期**：支持收件箱、已发送、邮件阅读、删除及搜索。
+- **多元化正文编辑模式**：
+  - **纯文本 (text)**：极简轻量，无外部依赖。
+  - **富文本 (rich)**：集成 **wangEditor**，支持专业排版、表格及引用。
+  - **在线文档 (onlyoffice)**：支持 Word 级编辑、预览。
 - **在线文档协同 (ONLYOFFICE)**：
-  - 支持通过 ONLYOFFICE 在线编辑文电正文。
-  - **场次隔离缓存**：不同演练场次之间的文档缓存物理隔离，确保数据安全。
 - **深度阅办追踪**：
   - 发件人可实时查看附件及正文的“已读/未读”状态。
   - 记录精确的首次回执（阅读）时间。
@@ -33,6 +35,7 @@ Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模
 - **框架**: Vue 3 (Composition API)
 - **路由**: Vue Router 4 (微前端基准路径适配)
 - **UI 组件库**: Element Plus
+- **富文本引擎**: wangEditor
 - **微前端方案**: Qiankun (via `vite-plugin-qiankun`)
 
 ## 📂 项目结构
@@ -48,6 +51,17 @@ Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模
 ├── uploads/            # 附件及文档物理存储 (按 session_id 隔离)
 └── raven.db            # SQLite 数据库文件
 ```
+
+## ⚙️ 环境配置
+
+本项目前端（`/web`）通过环境变量控制核心功能逻辑（如正文编辑模式和 API 地址）。
+
+1. 进入 `web` 目录：`cd web`
+2. 复制模板：`cp .env.example .env`
+3. 根据实际环境修改 `.env` 中的关键变量：
+   - `VITE_MAIL_CONTENT_MODE`: 文电正文模式（`text` / `onlyoffice`）。
+   - `VITE_BACKEND_URL`: 后端 API 地址（集成 ONLYOFFICE 时，此处**严禁**使用 localhost，需填写真实 IP）。
+   - `VITE_ONLYOFFICE_SERVER`: ONLYOFFICE 服务端地址。
 
 ## 🚀 快速开始
 

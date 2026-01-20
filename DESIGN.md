@@ -19,7 +19,15 @@ Raven 采用了基于职责分离的层级架构设计，确保了前后端及�
 - **存储隔离**：附件及在线文档按 `session_id` 划分目录（如 `/uploads/{session_id}/docs`）。
 - **清理机制**：后端提供 `DeleteSession` API，可物理删除特定场次的所有数据库记录及磁盘文件，由于 ONLYOFFICE 缓存依赖 docKey，清理后会强制重新加载。
 
-## 3. 在线正文编辑设计 (ONLYOFFICE Integration)
+## 3. 文电正文编辑策略 (Multi-Mode Editor)
+
+Raven 支持三种层级的正文编辑，通过驱动分发模式（Driver Pattern）动态加载：
+
+- **PlainText (Default)**：基于标准 Textarea 的纯文本编辑与渲染，无外部依赖。
+- **RichText (wangEditor)**：集成 wangEditor，支持标准 HTML 富文本能力，前端通过安全 v-html 及专属样式表实现高度一致的预览效果。
+- **OnlyOffice (Integrated)**：利用文档服务器实现真正的 Office 协同体验，提供最强的公文排版能力与 ForceSave 强制保存保障。
+
+## 4. 在线正文编辑设计 (ONLYOFFICE Integration)
 
 - **协同编辑**：采用 ONLYOFFICE 文档服务器处理正文，实现流畅的富文本及图片排版。
 - **ForceSave 策略**：文电发送前触发后端向 ONLYOFFICE 发送推送请求，强制文档同步到物理磁盘，确保发送的内容是最新版本。
