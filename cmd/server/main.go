@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"raven/internal/core/domain"
 	"raven/internal/handler"
@@ -14,6 +16,10 @@ import (
 )
 
 func main() {
+	var port int
+	flag.IntVar(&port, "port", 8080, "server port")
+	flag.Parse()
+
 	// 1. DB Setup using SQLite
 	db, err := gorm.Open(sqlite.Open("raven.db"), &gorm.Config{})
 	if err != nil {
@@ -67,8 +73,9 @@ func main() {
 		}
 	}
 
-	log.Println("Server starting on :8080")
-	if err := r.Run(":8080"); err != nil {
+	addr := fmt.Sprintf(":%d", port)
+	log.Printf("Server starting on %s\n", addr)
+	if err := r.Run(addr); err != nil {
 		log.Fatal(err)
 	}
 }

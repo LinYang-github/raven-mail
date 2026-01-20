@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { userStore } from '../store/user';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api/v1',
+  baseURL: API_BASE_URL,
 });
 
 // Helper to get current ID
@@ -15,5 +17,5 @@ export const deleteMail = (id) => api.delete(`/mails/${id}?user_id=${getUserID()
 export const sendMail = (formData) => api.post(`/mails/send?user_id=${getUserID()}`, formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 });
-export const getDownloadUrl = (att) => `http://localhost:8080/api/v1/mails/download?id=${att.id}&user_id=${getUserID()}`;
-export const getPreviewUrl = (att) => `http://localhost:8080/api/v1/mails/download?id=${att.id}&user_id=${getUserID()}&disposition=inline`;
+export const getDownloadUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.id}&user_id=${getUserID()}`;
+export const getPreviewUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.id}&user_id=${getUserID()}&disposition=inline`;
