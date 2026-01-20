@@ -22,6 +22,14 @@ type MailService interface {
 	SendChatMessage(ctx context.Context, sessionID, senderID, receiverID, content string) (*domain.ChatMessage, error)
 	GetChatHistory(ctx context.Context, sessionID, userA, userB string) ([]domain.ChatMessage, error)
 	MarkChatAsRead(ctx context.Context, sessionID, senderID, receiverID string) error
+
+	// Summary
+	GetUserSummary(ctx context.Context, sessionID, userID string) (*UserSummary, error)
+}
+
+type UserSummary struct {
+	UnreadMailCount int64          `json:"unread_mail_count"`
+	IMUnreadCounts  map[string]int `json:"im_unread_counts"`
 }
 
 type StorageService interface {

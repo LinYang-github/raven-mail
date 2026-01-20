@@ -140,3 +140,33 @@ func (r *MailRepository) MarkChatAsRead(ctx context.Context, sessionID, senderID
 		Where("session_id = ? AND sender_id = ? AND receiver_id = ? AND is_read = ?", sessionID, senderID, receiverID, false).
 		Update("is_read", true).Error
 }
+
+func (r *MailRepository) GetUnreadMailCount(ctx context.Context, sessionID, userID string) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&domain.MailRecipient{}).
+		Where("session_id = ? AND recipient_id = ? AND status = ?", sessionID, userID, "unread").
+		Count(&count).Error
+	return count, err
+}
+
+func (r *MailRepository) GetIMUnreadCounts(ctx context.Context, sessionID, userID string) (map[string]int, error) {
+	type Result struct {
+		SenderID string
+		Count    int
+	}
+	var results []Result
+	err := r.db.WithContext(ctx).Model(&domain.ChatMessage{}).
+		Select("sender_id, count(*) as count").
+		Where("session_id = ? AND receiver_id = ? AND is_read = ?", sessionID, userID, false).
+		Group("sender_id").
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	counts := make(map[string]int)
+	for _, res := range results {
+		counts[res.SenderID] = res.Count
+	}
+	return counts, nil
+}

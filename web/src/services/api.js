@@ -33,3 +33,4 @@ export const getPreviewUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.i
 export const sendChatMessage = (receiverId, content) => api.post(`/im/send?user_id=${getUserID()}`, { receiver_id: receiverId, content });
 export const getChatHistory = (otherId) => api.get(`/im/history?user_id=${getUserID()}&other_id=${otherId}`);
 export const markChatAsRead = (senderId) => api.post(`/im/read?user_id=${getUserID()}&sender_id=${senderId}`);
+export const getUserSummary = () => api.get(`/user/summary?user_id=${getUserID()}`);

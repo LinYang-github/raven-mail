@@ -216,6 +216,23 @@ func (s *MailService) MarkChatAsRead(ctx context.Context, sessionID, senderID, r
 	return s.repo.MarkChatAsRead(ctx, sessionID, senderID, receiverID)
 }
 
+func (s *MailService) GetUserSummary(ctx context.Context, sessionID, userID string) (*ports.UserSummary, error) {
+	mailCount, err := s.repo.GetUnreadMailCount(ctx, sessionID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	imCounts, err := s.repo.GetIMUnreadCounts(ctx, sessionID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ports.UserSummary{
+		UnreadMailCount: mailCount,
+		IMUnreadCounts:  imCounts,
+	}, nil
+}
+
 func (s *MailService) broadcast(payload interface{}) {
 	data, err := json.Marshal(payload)
 	if err != nil {

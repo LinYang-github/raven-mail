@@ -37,7 +37,7 @@ import MailList from './components/MailList.vue'
 import MailDetail from './components/MailDetail.vue'
 import ComposeView from './components/ComposeView.vue'
 import ChatWidget from './components/ChatWidget.vue'
-import { getInbox, getSent, getMail, deleteMail } from './services/api'
+import { getInbox, getSent, getMail, deleteMail, getUserSummary } from './services/api'
 import { userStore } from './store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -75,11 +75,22 @@ watch(() => route.params.id, async (newId) => {
   }
 }, { immediate: true })
 
+const fetchSummary = async () => {
+  if (!userStore.id) return
+  try {
+    const res = await getUserSummary()
+    userStore.applySummary(res.data)
+  } catch (err) {
+    console.error('Failed to fetch user summary:', err)
+  }
+}
+
 // 监听视图切换，重新抓取列表
 watch([currentView, () => userStore.id, () => userStore.sessionId], () => {
   if (currentView.value !== 'compose') {
     fetchMails()
   }
+  fetchSummary()
 })
 
 const setView = (view) => {
@@ -168,6 +179,7 @@ const handleComposeSuccess = () => {
 
 onMounted(() => {
   fetchMails()
+  fetchSummary()
 })
 </script>
 

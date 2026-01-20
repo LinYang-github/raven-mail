@@ -483,6 +483,25 @@ func (h *MailHandler) MarkChatAsRead(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.Status(http.StatusNoContent)
+}
+
+func (h *MailHandler) GetUserSummary(c *gin.Context) {
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		sessionID = "default"
+	}
+
+	userID := c.Query("user_id")
+	if userID == "" {
+		userID = h.DefaultSenderID
+	}
+
+	summary, err := h.service.GetUserSummary(c.Request.Context(), sessionID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
 }

@@ -61,6 +61,18 @@ export const userStore = reactive({
     this.totalIMUnread = Object.values(this.chatUnreads).reduce((sum, count) => sum + count, 0)
   },
 
+  applySummary(summary) {
+    if (!summary) return
+    if (summary.unread_mail_count !== undefined) {
+      this.unreadCount = summary.unread_mail_count
+    }
+    if (summary.im_unread_counts) {
+      this.chatUnreads = summary.im_unread_counts
+      this.recalculateIMUnread()
+    }
+    this.notifyHost()
+  },
+
   // SSE Notifications
   initNotifications() {
     if (this.eventSource) return;

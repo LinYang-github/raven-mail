@@ -100,6 +100,7 @@ func main() {
 		api.POST("/onlyoffice/callback", mailHandler.OnlyOfficeCallback)
 		api.POST("/onlyoffice/forcesave", mailHandler.OnlyOfficeForceSave)
 		api.DELETE("/sessions/:id", mailHandler.DeleteSession)
+		api.GET("/user/summary", mailHandler.GetUserSummary)
 	}
 
 	// --- 5. 静态前端资源托管 (内嵌) ---

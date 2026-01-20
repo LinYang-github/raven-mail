@@ -18,4 +18,8 @@ type MailRepository interface {
 	CreateChatMessage(ctx context.Context, msg *domain.ChatMessage) error
 	GetChatHistory(ctx context.Context, sessionID, userA, userB string, limit int) ([]domain.ChatMessage, error)
 	MarkChatAsRead(ctx context.Context, sessionID, senderID, receiverID string) error
+
+	// Summary / Initialization
+	GetUnreadMailCount(ctx context.Context, sessionID, userID string) (int64, error)
+	GetIMUnreadCounts(ctx context.Context, sessionID, userID string) (map[string]int, error)
 }
