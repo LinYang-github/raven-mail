@@ -92,6 +92,22 @@ func (r *MailRepository) DeleteForSender(ctx context.Context, mailID string) err
 		Update("sender_status", "deleted").Error
 }
 
+func (r *MailRepository) DeleteSession(ctx context.Context, sessionID string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Hard delete from all tables
+		if err := tx.Unscoped().Where("session_id = ?", sessionID).Delete(&domain.Attachment{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Unscoped().Where("session_id = ?", sessionID).Delete(&domain.MailRecipient{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Unscoped().Where("session_id = ?", sessionID).Delete(&domain.Mail{}).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func (r *MailRepository) GetAttachmentByID(ctx context.Context, sessionID, id string) (*domain.Attachment, error) {
 	var att domain.Attachment
 	if err := r.db.WithContext(ctx).Where("id = ? AND session_id = ?", id, sessionID).First(&att).Error; err != nil {

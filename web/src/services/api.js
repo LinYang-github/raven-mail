@@ -25,5 +25,6 @@ export const sendMail = (formData) => api.post(`/mails/send?user_id=${getUserID(
   headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const triggerForceSave = (key) => api.post(`/onlyoffice/forcesave?key=${key}`);
+export const deleteSession = (sessionId) => api.delete(`/sessions/${sessionId}`);
 export const getDownloadUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.id}&user_id=${getUserID()}`;
 export const getPreviewUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.id}&user_id=${getUserID()}&disposition=inline`;

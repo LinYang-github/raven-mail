@@ -357,6 +357,21 @@ func (h *MailHandler) OnlyOfficeCallback(c *gin.Context) {
 	c.JSON(200, gin.H{"error": 0})
 }
 
+func (h *MailHandler) DeleteSession(c *gin.Context) {
+	sessionID := c.Param("id")
+	if sessionID == "" || sessionID == "default" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete default or empty session"})
+		return
+	}
+
+	if err := h.service.DeleteSession(c.Request.Context(), sessionID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "session deleted successfully"})
+}
+
 func (h *MailHandler) StreamNotifications(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")

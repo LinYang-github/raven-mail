@@ -109,6 +109,43 @@ if (sessionSelector) {
     });
 }
 
+// 暴露重置场次接口
+window.resetSession = async () => {
+    const sid = state.sessionId;
+    if (sid === 'default') {
+        alert('默认场次禁止重置');
+        return;
+    }
+    if (!confirm(`确定要重置场次 "${sid}" 吗？这将删除该场次下的所有邮件和文档数据。`)) {
+        return;
+    }
+
+    try {
+        const url = `http://localhost:8080/api/v1/sessions/${sid}`;
+        const resp = await fetch(url, {
+            method: 'DELETE'
+        });
+        
+        const text = await resp.text();
+        console.log('[host] Reset session response:', text);
+
+        if (resp.ok) {
+            alert('场次数据已清空');
+            // 简单粗暴但有效：刷新页面重置所有子应用状态
+            window.location.reload();
+        } else {
+            let errorMsg = text;
+            try {
+                const result = JSON.parse(text);
+                errorMsg = result.error || text;
+            } catch (e) {}
+            alert(`清理失败: ${errorMsg}`);
+        }
+    } catch (err) {
+        alert(`网络错误: ${err.message}`);
+    }
+};
+
 
 // Demo 简单的路由高亮逻辑
 const updateNav = () => {

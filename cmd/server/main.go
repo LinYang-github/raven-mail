@@ -93,6 +93,7 @@ func main() {
 		api.GET("/onlyoffice/template", mailHandler.ServeOnlyOfficeTemplate)
 		api.POST("/onlyoffice/callback", mailHandler.OnlyOfficeCallback)
 		api.POST("/onlyoffice/forcesave", mailHandler.OnlyOfficeForceSave)
+		api.DELETE("/sessions/:id", mailHandler.DeleteSession)
 	}
 
 	// --- 5. 静态前端资源托管 (内嵌) ---

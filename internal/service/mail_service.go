@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"raven/internal/core/domain"
 	"raven/internal/core/ports"
 	"strings"
@@ -142,6 +144,25 @@ func (s *MailService) DeleteMail(ctx context.Context, sessionID, userID, mailID 
 
 	// User is recipient -> delete for recipient
 	return s.repo.UpdateStatus(ctx, mailID, userID, "deleted")
+}
+
+func (s *MailService) DeleteSession(ctx context.Context, sessionID string) error {
+	if sessionID == "" || sessionID == "default" {
+		return nil // Safety
+	}
+
+	// 1. Delete DB records
+	if err := s.repo.DeleteSession(ctx, sessionID); err != nil {
+		return err
+	}
+
+	// 2. Delete Uploads
+	_ = s.storage.DeleteSessionDir(ctx, sessionID)
+
+	// 3. Delete OnlyOffice docs (hardcoded path in handler, but we can handle it here too)
+	_ = os.RemoveAll(filepath.Join("./data", sessionID))
+
+	return nil
 }
 
 func (s *MailService) GetAttachment(ctx context.Context, sessionID, attachmentID string) (*domain.Attachment, error) {
