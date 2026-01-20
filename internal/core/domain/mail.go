@@ -38,24 +38,26 @@ type MailRecipient struct {
 
 // Attachment represents a file attachment
 type Attachment struct {
-	ID        string    `gorm:"primaryKey;type:uuid" json:"id"`
-	MailID    string    `gorm:"index;not null" json:"mail_id"`
-	SessionID string    `gorm:"index;not null;default:'default'" json:"session_id"`
-	FileName  string    `gorm:"not null" json:"file_name"`
-	FilePath  string    `gorm:"not null" json:"file_path"` // Path in object storage or simple FS
-	FileSize  int64     `json:"file_size"`
-	MimeType  string    `json:"mime_type"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            string    `gorm:"primaryKey;type:uuid" json:"id"`
+	MailID        *string   `gorm:"index" json:"mail_id,omitempty"`
+	ChatMessageID *string   `gorm:"index" json:"chat_message_id,omitempty"`
+	SessionID     string    `gorm:"index;not null;default:'default'" json:"session_id"`
+	FileName      string    `gorm:"not null" json:"file_name"`
+	FilePath      string    `gorm:"not null" json:"file_path"` // Path in object storage or simple FS
+	FileSize      int64     `json:"file_size"`
+	MimeType      string    `json:"mime_type"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 type ChatMessage struct {
-	ID         string    `gorm:"primaryKey" json:"id"`
-	SessionID  string    `gorm:"index" json:"session_id"`
-	SenderID   string    `gorm:"index" json:"sender_id"`
-	ReceiverID string    `gorm:"index" json:"receiver_id"` // User ID
-	Content    string    `json:"content"`
-	IsRead     bool      `gorm:"default:false" json:"is_read"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID          string       `gorm:"primaryKey" json:"id"`
+	SessionID   string       `gorm:"index" json:"session_id"`
+	SenderID    string       `gorm:"index" json:"sender_id"`
+	ReceiverID  string       `gorm:"index" json:"receiver_id"` // User ID
+	Content     string       `json:"content"`
+	IsRead      bool         `gorm:"default:false" json:"is_read"`
+	CreatedAt   time.Time    `json:"created_at"`
+	Attachments []Attachment `gorm:"foreignKey:ChatMessageID" json:"attachments"`
 }
 
 // BeforeCreate hooks to set UUIDs

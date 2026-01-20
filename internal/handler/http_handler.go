@@ -408,13 +408,29 @@ func (h *MailHandler) StreamNotifications(c *gin.Context) {
 // Chat / IM Handlers
 
 func (h *MailHandler) SendChatMessage(c *gin.Context) {
-	var body struct {
-		ReceiverID string `json:"receiver_id"`
-		Content    string `json:"content"`
-	}
-	if err := c.BindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid body"})
-		return
+	// Multipart form
+	receiverID := c.PostForm("receiver_id")
+	content := c.PostForm("content")
+
+	// Attachments
+	form, _ := c.MultipartForm()
+	files := form.File["attachments"]
+
+	var attachmentReqs []ports.AttachmentRequest
+	for _, file := range files {
+		f, err := file.Open()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to open attachment"})
+			return
+		}
+		defer f.Close()
+
+		attachmentReqs = append(attachmentReqs, ports.AttachmentRequest{
+			FileName: file.Filename,
+			Content:  f,
+			Size:     file.Size,
+			MimeType: file.Header.Get("Content-Type"),
+		})
 	}
 
 	sessionID := c.GetHeader("X-Session-ID")
@@ -427,7 +443,14 @@ func (h *MailHandler) SendChatMessage(c *gin.Context) {
 		senderID = h.DefaultSenderID
 	}
 
-	msg, err := h.service.SendChatMessage(c.Request.Context(), sessionID, senderID, body.ReceiverID, body.Content)
+	req := ports.SendChatMessageRequest{
+		SessionID:   sessionID,
+		ReceiverID:  receiverID,
+		Content:     content,
+		Attachments: attachmentReqs,
+	}
+
+	msg, err := h.service.SendChatMessage(c.Request.Context(), senderID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

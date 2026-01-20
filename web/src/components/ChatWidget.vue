@@ -64,6 +64,27 @@
               >
                 <div class="message-content">
                   <div class="text">{{ msg.content }}</div>
+                  
+                  <!-- Attachments -->
+                  <div v-if="msg.attachments && msg.attachments.length > 0" class="chat-attachments">
+                    <div v-for="att in msg.attachments" :key="att.id" class="chat-attachment-item">
+                        <template v-if="isImage(att)">
+                            <el-image 
+                                :src="getAttachmentUrl(att)" 
+                                :preview-src-list="[getAttachmentUrl(att)]"
+                                class="chat-image"
+                                fit="cover"
+                            />
+                        </template>
+                        <template v-else>
+                            <a :href="getAttachmentUrl(att)" target="_blank" class="chat-file">
+                                <el-icon><Document /></el-icon>
+                                <span>{{ att.file_name }}</span>
+                            </a>
+                        </template>
+                    </div>
+                  </div>
+
                   <div class="time">{{ formatTime(msg.created_at) }}</div>
                 </div>
               </div>
@@ -71,7 +92,17 @@
                 暂无聊天记录，开始打个招呼吧
               </div>
             </div>
+            
             <div class="input-area">
+              <!-- Pending Files -->
+              <div v-if="pendingFiles.length > 0" class="pending-files">
+                <div v-for="(file, index) in pendingFiles" :key="index" class="pending-file">
+                    <el-icon><Document /></el-icon>
+                    <span class="filename">{{ file.name }}</span>
+                    <el-icon class="remove-btn" @click="removePendingFile(index)"><Close /></el-icon>
+                </div>
+              </div>
+
               <el-input
                 v-model="inputText"
                 type="textarea"
@@ -81,7 +112,9 @@
                 @keydown.enter.prevent="handleSend"
               ></el-input>
               <div class="input-actions">
-                <el-button type="primary" size="small" :disabled="!inputText.trim()" @click="handleSend">
+                <input type="file" ref="fileInput" multiple style="display: none" @change="handleFileSelect">
+                <el-button link :icon="Paperclip" @click="triggerFileUpload" class="action-btn"></el-button>
+                <el-button type="primary" size="small" :disabled="!canSend" @click="handleSend">
                   发送
                 </el-button>
               </div>
@@ -95,9 +128,9 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { ChatDotRound, Close, Search, ArrowLeft } from '@element-plus/icons-vue'
+import { ChatDotRound, Close, Search, ArrowLeft, Paperclip, Document } from '@element-plus/icons-vue'
 import { userStore } from '../store/user'
-import { sendChatMessage, getChatHistory, markChatAsRead } from '../services/api'
+import { sendChatMessage, getChatHistory, markChatAsRead, getPreviewUrl } from '../services/api'
 import { ElMessage, ElNotification } from 'element-plus'
 
 const isOpen = ref(false)
@@ -106,6 +139,8 @@ const userQuery = ref('')
 const userOptions = ref([])
 const inputText = ref('')
 const messageListRef = ref(null)
+const fileInput = ref(null)
+const pendingFiles = ref([])
 
 const activePartnerName = computed(() => {
   return userOptions.value.find(u => u.id === activePartner.value)?.name || activePartner.value
@@ -117,6 +152,10 @@ const currentMessages = computed(() => {
 
 const totalUnread = computed(() => {
   return userStore.totalIMUnread
+})
+
+const canSend = computed(() => {
+    return (inputText.value.trim() || pendingFiles.value.length > 0) && activePartner.value
 })
 
 const toggleChat = () => {
@@ -156,14 +195,32 @@ const selectPartner = async (user) => {
   }
 }
 
+const triggerFileUpload = () => {
+    fileInput.value.click()
+}
+
+const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files)
+    pendingFiles.value.push(...files)
+    // Reset input so same file can be selected again
+    event.target.value = ''
+}
+
+const removePendingFile = (index) => {
+    pendingFiles.value.splice(index, 1)
+}
+
 const handleSend = async () => {
-  if (!inputText.value.trim() || !activePartner.value) return
+  if (!canSend.value) return
   
   const content = inputText.value.trim()
+  const files = [...pendingFiles.value]
+  
   inputText.value = ''
+  pendingFiles.value = []
 
   try {
-    const res = await sendChatMessage(activePartner.value, content)
+    const res = await sendChatMessage(activePartner.value, content, files)
     // 推送到本地状态
     if (!userStore.chats[activePartner.value]) {
       userStore.chats[activePartner.value] = []
@@ -172,6 +229,8 @@ const handleSend = async () => {
     scrollToBottom()
   } catch (err) {
     ElMessage.error('发送失败')
+    // Restore text if failed (optional, but good UX)
+    if (content) inputText.value = content
   }
 }
 
@@ -186,6 +245,14 @@ const scrollToBottom = () => {
 const formatTime = (dateStr) => {
   const date = new Date(dateStr)
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+const isImage = (att) => {
+    return att.mime_type && att.mime_type.startsWith('image/')
+}
+
+const getAttachmentUrl = (att) => {
+    return getPreviewUrl(att)
 }
 
 // 监听新消息事件
@@ -207,7 +274,7 @@ onMounted(() => {
     if (msg.sender_id !== userStore.id && (!isOpen.value || activePartner.value !== msg.sender_id)) {
         ElNotification({
             title: '新即时消息',
-            message: msg.content,
+            message: msg.content || '[附件]',
             type: 'info',
             position: 'bottom-right',
             offset: 80, // 避免挡住气泡
@@ -219,6 +286,7 @@ onMounted(() => {
 
 watch(activePartner, () => {
     scrollToBottom()
+    pendingFiles.value = [] // clear pending files on switch
 })
 </script>
 
@@ -422,7 +490,77 @@ watch(activePartner, () => {
 .input-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
   margin-top: 8px;
+}
+
+.action-btn {
+    font-size: 18px;
+    color: #606266;
+}
+.action-btn:hover {
+    color: var(--raven-primary-color);
+}
+
+.pending-files {
+    padding: 0 0 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pending-file {
+    font-size: 12px;
+    background: #f0f2f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pending-file .filename {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pending-file .remove-btn {
+    cursor: pointer;
+    color: #909399;
+}
+.pending-file .remove-btn:hover {
+    color: #f56c6c;
+}
+
+.chat-attachments {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.chat-image {
+    max-width: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.chat-file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: #409EFF;
+    font-size: 13px;
+    background: #f4f4f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.chat-file:hover {
+    background: #ecf5ff;
 }
 
 /* Animations */

@@ -128,6 +128,7 @@ func (r *MailRepository) CreateChatMessage(ctx context.Context, msg *domain.Chat
 func (r *MailRepository) GetChatHistory(ctx context.Context, sessionID, userA, userB string, limit int) ([]domain.ChatMessage, error) {
 	var msgs []domain.ChatMessage
 	err := r.db.WithContext(ctx).
+		Preload("Attachments").
 		Where("session_id = ? AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))", sessionID, userA, userB, userB, userA).
 		Order("created_at asc").
 		Limit(limit).

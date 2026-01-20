@@ -183,13 +183,30 @@ func (s *MailService) GetAttachment(ctx context.Context, sessionID, attachmentID
 	return s.repo.GetAttachmentByID(ctx, sessionID, attachmentID)
 }
 
-func (s *MailService) SendChatMessage(ctx context.Context, sessionID, senderID, receiverID, content string) (*domain.ChatMessage, error) {
+func (s *MailService) SendChatMessage(ctx context.Context, senderID string, req ports.SendChatMessageRequest) (*domain.ChatMessage, error) {
+	// Handle Attachments
+	var attachments []domain.Attachment
+	for _, attReq := range req.Attachments {
+		path, err := s.storage.UploadFile(ctx, req.SessionID, attReq.FileName, attReq.Content)
+		if err != nil {
+			return nil, err
+		}
+		attachments = append(attachments, domain.Attachment{
+			SessionID: req.SessionID,
+			FileName:  attReq.FileName,
+			FilePath:  path,
+			FileSize:  attReq.Size,
+			MimeType:  attReq.MimeType,
+		})
+	}
+
 	msg := &domain.ChatMessage{
-		SessionID:  sessionID,
-		SenderID:   senderID,
-		ReceiverID: receiverID,
-		Content:    content,
-		CreatedAt:  time.Now(),
+		SessionID:   req.SessionID,
+		SenderID:    senderID,
+		ReceiverID:  req.ReceiverID,
+		Content:     req.Content,
+		Attachments: attachments,
+		CreatedAt:   time.Now(),
 	}
 
 	if err := s.repo.CreateChatMessage(ctx, msg); err != nil {
@@ -199,8 +216,8 @@ func (s *MailService) SendChatMessage(ctx context.Context, sessionID, senderID, 
 	// Broadcast
 	payload := map[string]interface{}{
 		"type":       "CHAT",
-		"session_id": sessionID,
-		"targets":    []string{receiverID},
+		"session_id": req.SessionID,
+		"targets":    []string{req.ReceiverID},
 		"data":       msg,
 	}
 	s.broadcast(payload)

@@ -30,7 +30,17 @@ export const getDownloadUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.
 export const getPreviewUrl = (att) => `${API_BASE_URL}/mails/download?id=${att.id}&user_id=${getUserID()}&disposition=inline`;
 
 // Chat APIs
-export const sendChatMessage = (receiverId, content) => api.post(`/im/send?user_id=${getUserID()}`, { receiver_id: receiverId, content });
+export const sendChatMessage = (receiverId, content, files = []) => {
+    const formData = new FormData();
+    formData.append('receiver_id', receiverId);
+    formData.append('content', content);
+    files.forEach(file => {
+        formData.append('attachments', file.raw || file);
+    });
+    return api.post(`/im/send?user_id=${getUserID()}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
 export const getChatHistory = (otherId) => api.get(`/im/history?user_id=${getUserID()}&other_id=${otherId}`);
 export const markChatAsRead = (senderId) => api.post(`/im/read?user_id=${getUserID()}&sender_id=${senderId}`);
 export const getUserSummary = () => api.get(`/user/summary?user_id=${getUserID()}`);

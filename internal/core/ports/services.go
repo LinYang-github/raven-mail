@@ -19,12 +19,19 @@ type MailService interface {
 	Unsubscribe(chan string)
 
 	// Chat / IM
-	SendChatMessage(ctx context.Context, sessionID, senderID, receiverID, content string) (*domain.ChatMessage, error)
+	SendChatMessage(ctx context.Context, senderID string, req SendChatMessageRequest) (*domain.ChatMessage, error)
 	GetChatHistory(ctx context.Context, sessionID, userA, userB string) ([]domain.ChatMessage, error)
 	MarkChatAsRead(ctx context.Context, sessionID, senderID, receiverID string) error
 
 	// Summary
 	GetUserSummary(ctx context.Context, sessionID, userID string) (*UserSummary, error)
+}
+
+type SendChatMessageRequest struct {
+	SessionID   string
+	ReceiverID  string
+	Content     string
+	Attachments []AttachmentRequest
 }
 
 type UserSummary struct {
