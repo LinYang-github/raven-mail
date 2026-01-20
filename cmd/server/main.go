@@ -26,44 +26,44 @@ func main() {
 	var ooHost string
 	var defUser string
 
-	flag.IntVar(&port, "port", 8080, "server port")
-	flag.StringVar(&ooHost, "oo-host", os.Getenv("ONLYOFFICE_HOST"), "OnlyOffice server host (e.g. 192.168.1.100:8090)")
-	flag.StringVar(&defUser, "default-user", os.Getenv("DEFAULT_USER_ID"), "Default User ID for simulation")
+	flag.IntVar(&port, "port", 8080, "web服务端口")
+	flag.StringVar(&ooHost, "oo-host", os.Getenv("ONLYOFFICE_HOST"), "OnlyOffice 服务地址 (例如 192.168.1.100:8090)")
+	flag.StringVar(&defUser, "default-user", os.Getenv("DEFAULT_USER_ID"), "模拟环境下的默认用户 ID")
 	flag.Parse()
 
 	if ooHost == "" {
-		ooHost = "localhost:8090" // Generic fallback
+		ooHost = "localhost:8090" // 默认回退地址
 	}
 	if defUser == "" {
 		defUser = "guest"
 	}
 
-	// 1. DB Setup using SQLite
+	// 1. 初始化 SQLite 数据库
 	db, err := gorm.Open(sqlite.Open("raven.db"), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("failed to connect database: %v", err)
+		log.Fatalf("数据库连接失败: %v", err)
 	}
 
-	// Auto Migrate
+	// 自动迁移表结构
 	if err := db.AutoMigrate(&domain.Mail{}, &domain.MailRecipient{}, &domain.Attachment{}, &domain.ChatMessage{}); err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
+		log.Fatalf("数据库迁移失败: %v", err)
 	}
 
-	// 2. Storage Setup
+	// 2. 初始化存储层
 	store, err := storage.NewLocalStorage("./uploads")
 	if err != nil {
-		log.Fatalf("failed to init storage: %v", err)
+		log.Fatalf("存储初始化失败: %v", err)
 	}
 
-	// 3. Application Layers
+	// 3. 初始化应用层依赖
 	mailRepo := repository.NewMailRepository(db)
 	mailService := service.NewMailService(mailRepo, store)
 	mailHandler := handler.NewMailHandler(mailService, store, ooHost, defUser)
 
-	// 4. Gin Router
+	// 4. 配置 Gin 路由
 	r := gin.Default()
 
-	// Generic CORS middleware
+	// 通用 CORS 中间件配置
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -140,7 +140,7 @@ func main() {
 			// 如果文件不存在且不是 API，兜底返回 index.html (支持 Vue Router)
 			fIndex, err := distFS.Open("index.html")
 			if err != nil {
-				c.String(404, "Frontend assets not found. Did you run 'npm run build'?")
+				c.String(404, "未找到前端资源，请确认是否执行了 'npm run build'。")
 				return
 			}
 			defer fIndex.Close()
@@ -150,7 +150,7 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%d", port)
-	log.Printf("Server starting on %s\n", addr)
+	log.Printf("服务启动于 %s\n", addr)
 	if err := r.Run(addr); err != nil {
 		log.Fatal(err)
 	}
