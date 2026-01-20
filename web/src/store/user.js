@@ -13,6 +13,7 @@ export const userStore = reactive({
     showSidebar: true,    // 是否显示侧边栏
     primaryColor: '#409EFF' // 主题色
   },
+  modules: ['mail', 'im'], // Enabled modules
   chats: {}, // { userId: [messages] }
   chatUnreads: {}, // { userId: count }
   totalIMUnread: 0,
@@ -24,6 +25,12 @@ export const userStore = reactive({
 
   setSession(sid) {
     this.sessionId = sid
+  },
+
+  setModules(modules) {
+    if (Array.isArray(modules)) {
+      this.modules = modules
+    }
   },
 
   setFetchUsers(fn) {

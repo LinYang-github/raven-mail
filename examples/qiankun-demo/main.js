@@ -65,13 +65,14 @@ actions.onGlobalStateChange((newState) => {
 });
 
 // 1. 定义子应用
-// 1. 定义子应用 - 拆分为三个独立注册的实例以支持不同的 Base Route
+
+// 1. 定义子应用 - 统一为综合办公平台
 const apps = [
   {
-    name: 'raven-mail',
+    name: 'raven-app',
     entry: SUBAPP_ENTRY,
     container: '#subapp-container',
-    activeRule: '/mail',
+    activeRule: '/app',
     props: {
         token: 'demo-host-token-xyz',
         getGlobalState: () => state,
@@ -79,46 +80,35 @@ const apps = [
         ravenConfig: { showReset: true, showSidebar: true, primaryColor: state.themeColor },
         fetchUsers: (query) => fetchUsersMockByRole(query, state.user),
         
-        // Feature Flags & Config
-        modules: ['mail'],
-        routeBase: '/mail'
-    }
-  },
-  {
-    name: 'raven-im',
-    entry: SUBAPP_ENTRY,
-    container: '#subapp-container',
-    activeRule: '/im',
-    props: {
-        token: 'demo-host-token-xyz',
-        getGlobalState: () => state,
-        onGlobalStateChange: (callback, fireImmediately) => actions.onGlobalStateChange(callback, fireImmediately),
-        ravenConfig: { showReset: true, showSidebar: true, primaryColor: state.themeColor },
-        fetchUsers: (query) => fetchUsersMockByRole(query, state.user),
-        
-        // Feature Flags & Config
-        modules: ['im'],
-        routeBase: '/im'
-    }
-  },
-  {
-    name: 'raven-all',
-    entry: SUBAPP_ENTRY,
-    container: '#subapp-container',
-    activeRule: '/all',
-    props: {
-        token: 'demo-host-token-xyz',
-        getGlobalState: () => state,
-        onGlobalStateChange: (callback, fireImmediately) => actions.onGlobalStateChange(callback, fireImmediately),
-        ravenConfig: { showReset: true, showSidebar: true, primaryColor: state.themeColor },
-        fetchUsers: (query) => fetchUsersMockByRole(query, state.user),
-        
-        // Feature Flags & Config
+        // Initial modules config
         modules: ['mail', 'im'],
-        routeBase: '/all'
+        routeBase: '/app'
     }
   }
 ];
+
+// 模块变更监听
+const modMail = document.getElementById('mod-mail');
+const modIM = document.getElementById('mod-im');
+
+const updateModules = () => {
+    const modules = [];
+    if (modMail && modMail.checked) modules.push('mail');
+    if (modIM && modIM.checked) modules.push('im');
+    
+    console.log('[host] switching modules to:', modules);
+    actions.setGlobalState({ modules });
+};
+
+if (modMail) {
+    modMail.addEventListener('change', updateModules);
+    // 强制触发一次以同步初始状态（因为 HTML 中是 checked）
+    // 或者我们直接在 apps 中声明了 initial modules，这里只做后续更新。
+    // 为了保险，我们可以不立即触发，因为 app 初始化时已经有默认值。
+}
+if (modIM) {
+    modIM.addEventListener('change', updateModules);
+}
 
 // 2. 注册子应用
 registerMicroApps(apps);

@@ -11,15 +11,19 @@ import { useRoute } from 'vue-router'
 import MailClient from './components/MailClient.vue'
 import ChatWidget from './components/ChatWidget.vue'
 
+import { userStore } from './store/user'
+
 const props = defineProps({
   modules: { type: [Array, String], default: () => ['mail', 'im'] }
 })
 
+// Use userStore.modules which is reactive and updated via GlobalState
 const isEnabled = (moduleName) => {
-  if (Array.isArray(props.modules)) {
-    return props.modules.includes(moduleName)
+  const currentModules = userStore.modules || props.modules
+  if (Array.isArray(currentModules)) {
+    return currentModules.includes(moduleName)
   }
-  return props.modules === moduleName
+  return currentModules === moduleName
 }
 
 const showMail = computed(() => isEnabled('mail'))
