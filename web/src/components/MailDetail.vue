@@ -169,7 +169,7 @@ const formatDate = (dateStr) => {
 }
 
 .sender-avatar {
-  background: #409EFF;
+  background: var(--raven-primary-color);
   font-size: 18px;
   font-weight: 600;
 }
@@ -202,7 +202,7 @@ const formatDate = (dateStr) => {
 }
 
 .tracking-stats {
-  color: #409EFF;
+  color: var(--raven-primary-color);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
@@ -289,14 +289,14 @@ const formatDate = (dateStr) => {
 }
 
 .att-item:hover {
-  border-color: #409EFF;
+  border-color: var(--raven-primary-color);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .att-icon {
   font-size: 20px;
-  color: #409EFF;
+  color: var(--raven-primary-color);
   margin-right: 10px;
 }
 

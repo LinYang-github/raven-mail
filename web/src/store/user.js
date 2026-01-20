@@ -8,6 +8,11 @@ export const userStore = reactive({
   eventSource: null,
   fetchUsers: null, // Global user directory helper
   qiankunActions: null, // Qiankun state actions
+  config: {
+    showReset: true,      // 是否显示场次重置按钮
+    showSidebar: true,    // 是否显示侧边栏
+    primaryColor: '#409EFF' // 主题色
+  },
 
   setUser(id, name) {
     this.id = id
@@ -24,6 +29,19 @@ export const userStore = reactive({
 
   setQiankunActions(actions) {
     this.qiankunActions = actions
+  },
+
+  applyConfig(newConfig) {
+    if (!newConfig) return
+    this.config = { ...this.config, ...newConfig }
+    
+    // Apply primary color to CSS variables
+    if (this.config.primaryColor) {
+      document.documentElement.style.setProperty('--raven-primary-color', this.config.primaryColor);
+      // Generate light/dark versions (simplified for demo)
+      document.documentElement.style.setProperty('--raven-primary-light', `${this.config.primaryColor}1a`); // 10% opacity
+      document.documentElement.style.setProperty('--raven-primary-dark', this.config.primaryColor); 
+    }
   },
 
   setUnreadCount(count) {

@@ -70,12 +70,12 @@ defineEmits(['update:view', 'compose'])
 .logo-icon {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #409EFF 0%, #304bd6 100%);
+  background: linear-gradient(135deg, var(--raven-primary-color) 0%, var(--raven-primary-dark) 100%);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.3);
+  box-shadow: 0 2px 6px var(--raven-primary-light);
 }
 
 .title {
@@ -93,13 +93,13 @@ defineEmits(['update:view', 'compose'])
   width: 100%;
   border-radius: 8px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+  box-shadow: 0 4px 12px var(--raven-primary-light);
   transition: all 0.3s;
 }
 
 .compose-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
+  box-shadow: 0 6px 16px var(--raven-primary-light);
 }
 
 .mr-2 {
@@ -131,8 +131,8 @@ defineEmits(['update:view', 'compose'])
 }
 
 .menu-item.active {
-  background: #e6f0ff;
-  color: #409EFF;
+  background: var(--raven-primary-light);
+  color: var(--raven-primary-color);
 }
 
 .menu-item .el-icon {

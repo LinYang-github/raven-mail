@@ -41,6 +41,9 @@ renderWithQiankun({
     if (props.sessionId) {
       userStore.setSession(props.sessionId)
     }
+    if (props.ravenConfig) {
+      userStore.applyConfig(props.ravenConfig)
+    }
 
     // Capture qiankun actions/props
     userStore.setQiankunActions(props)
@@ -62,6 +65,9 @@ renderWithQiankun({
         }
         if (state.sessionId) {
           userStore.setSession(state.sessionId)
+        }
+        if (state.ravenConfig) {
+          userStore.applyConfig(state.ravenConfig)
         }
       }, true) // fireImmediately: true
     }

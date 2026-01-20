@@ -130,6 +130,6 @@ onBeforeUnmount(() => {
   justify-content: center;
   z-index: 10;
   gap: 10px;
-  color: #409EFF;
+  color: var(--raven-primary-color);
 }
 </style>

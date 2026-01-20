@@ -3,7 +3,8 @@ import { registerMicroApps, start, initGlobalState } from 'qiankun';
 // 初始状态
 const state = {
     user: { name: '红方-01', id: 'user-123', role: 'RED' },
-    sessionId: 'default'
+    sessionId: 'default',
+    themeColor: '#409EFF'
 };
 
 const allUsersInDirectory = [
@@ -52,6 +53,7 @@ actions.onGlobalStateChange((newState) => {
     console.log('[host] state changed', newState);
     state.user = newState.user || state.user;
     state.sessionId = newState.sessionId || state.sessionId;
+    state.themeColor = newState.themeColor || state.themeColor;
     
     // 处理未读数变更
     if (newState.unreadCount !== undefined) {
@@ -70,6 +72,11 @@ const apps = [
         token: 'demo-host-token-xyz',
         user: state.user,
         sessionId: state.sessionId,
+        ravenConfig: {
+            showReset: true,
+            showSidebar: true,
+            primaryColor: state.themeColor
+        },
         // 关键点：将当前的 role 闭包进去或通过 state 实时获取
         fetchUsers: (query) => fetchUsersMockByRole(query, state.user)
     }
@@ -111,6 +118,22 @@ if (selector) {
         
         console.log('[host] switching user to:', newUser);
         actions.setGlobalState({ user: newUser });
+    });
+}
+
+const themeSelector = document.getElementById('theme-select');
+if (themeSelector) {
+    themeSelector.addEventListener('change', (e) => {
+        const color = e.target.value;
+        console.log('[host] switching theme color to:', color);
+        actions.setGlobalState({ 
+            themeColor: color,
+            ravenConfig: {
+                showReset: true,
+                showSidebar: true,
+                primaryColor: color
+            }
+        });
     });
 }
 

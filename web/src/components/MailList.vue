@@ -160,7 +160,7 @@ const handleSearch = () => {
 }
 
 .mail-item.active {
-  background: #eef5fe;
+  background: var(--raven-primary-light);
   border-color: transparent;
 }
 
@@ -192,7 +192,7 @@ const handleSearch = () => {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: #409EFF;
+  background: var(--raven-primary-color);
 }
 
 .item-header {
@@ -243,7 +243,7 @@ const handleSearch = () => {
 }
 
 .subject.active-text {
-  color: #409EFF;
+  color: var(--raven-primary-color);
 }
 
 .preview {
@@ -256,11 +256,11 @@ const handleSearch = () => {
 }
 
 .office-label {
-  color: #409EFF;
+  color: var(--raven-primary-color);
   font-weight: 500;
   display: inline-flex;
   align-items: center;
-  background: #f0f7ff;
+  background: var(--raven-primary-light);
   padding: 0 6px;
   border-radius: 4px;
 }

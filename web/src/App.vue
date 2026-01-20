@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <Sidebar :currentView="currentView" @update:view="setView" @compose="openCompose" />
+    <Sidebar v-if="userStore.config.showSidebar" :currentView="currentView" @update:view="setView" @compose="openCompose" />
     
     <div class="main-content">
       <MailList 
