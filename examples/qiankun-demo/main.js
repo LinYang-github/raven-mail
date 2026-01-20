@@ -38,11 +38,25 @@ const fetchUsersMockByRole = async (query, currentUser) => {
 // 初始化全局状态
 const actions = initGlobalState(state);
 
+// 提取 UI 更新函数
+const updateUnreadBadge = (count) => {
+    const badge = document.getElementById('mail-badge');
+    if (badge) {
+        badge.innerText = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+};
+
 // 监听状态变更并更新局部 state
 actions.onGlobalStateChange((newState) => {
     console.log('[host] state changed', newState);
-    state.user = newState.user;
-    state.sessionId = newState.sessionId;
+    state.user = newState.user || state.user;
+    state.sessionId = newState.sessionId || state.sessionId;
+    
+    // 处理未读数变更
+    if (newState.unreadCount !== undefined) {
+        updateUnreadBadge(newState.unreadCount);
+    }
 });
 
 // 1. 定义子应用
@@ -155,9 +169,7 @@ const updateNav = () => {
     
     if(path.startsWith('/mail')) {
         document.getElementById('nav-mail').classList.add('active');
-        // 进入邮件模块时清除徽标提示
-        const badge = document.getElementById('mail-badge');
-        if (badge) badge.style.display = 'none';
+        // 进入邮件模块时不再强制清除徽标，保持其实时性
     }
 };
 
@@ -167,11 +179,7 @@ window.addEventListener('raven-new-mail', (event) => {
     console.log(`[host] New mail for ${userId}, unread: ${unreadCount}`);
     
     // 更新侧边栏徽标
-    const badge = document.getElementById('mail-badge');
-    if (badge) {
-        badge.innerText = unreadCount;
-        badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
-    }
+    updateUnreadBadge(unreadCount);
     
     // 桌面通知示例
     if (Notification.permission === 'granted') {

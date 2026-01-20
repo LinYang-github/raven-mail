@@ -44,7 +44,7 @@ func (r *MailRepository) GetInbox(ctx context.Context, sessionID, recipientID st
 		query = query.Where("mails.subject LIKE ? OR mails.content LIKE ?", like, like)
 	}
 
-	query = query.Preload("Attachments")
+	query = query.Preload("Attachments").Preload("Recipients")
 
 	if err := query.Model(&domain.Mail{}).Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -68,7 +68,7 @@ func (r *MailRepository) GetSent(ctx context.Context, sessionID, senderID string
 		query = query.Where("subject LIKE ? OR content LIKE ?", like, like)
 	}
 
-	query = query.Preload("Attachments")
+	query = query.Preload("Attachments").Preload("Recipients")
 
 	if err := query.Model(&domain.Mail{}).Count(&total).Error; err != nil {
 		return nil, 0, err

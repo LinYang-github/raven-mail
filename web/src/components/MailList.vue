@@ -28,9 +28,10 @@
         v-for="mail in mailList" 
         :key="mail.id"
         class="mail-item"
-        :class="{ active: selectedId === mail.id }"
+        :class="{ active: selectedId === mail.id, unread: isUnread(mail) }"
         @click="$emit('select', mail)"
       >
+        <div v-if="isUnread(mail)" class="unread-dot"></div>
         <div class="item-header">
           <span class="sender">{{ mail.sender_id }}</span>
           <div class="header-right">
@@ -73,9 +74,15 @@
 import { computed, ref, watch } from 'vue'
 import { Refresh, Paperclip, Search, Delete } from '@element-plus/icons-vue'
 import { debounce } from 'lodash'
+import { userStore } from '../store/user'
 
 const props = defineProps(['mails', 'loading', 'selectedId', 'title'])
 const emit = defineEmits(['select', 'refresh', 'search', 'delete'])
+
+const isUnread = (mail) => {
+  const r = mail.recipients?.find(rp => rp.recipient_id === userStore.id)
+  return r && r.status === 'unread'
+}
 
 const mailList = computed(() => props.mails || [])
 const searchQuery = ref('')
@@ -155,6 +162,27 @@ const handleSearch = () => {
 .mail-item.active {
   background: #eef5fe;
   border-color: transparent;
+}
+
+.mail-item.unread .sender {
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.mail-item.unread .subject {
+  color: #303133;
+  font-weight: 600;
+}
+
+.unread-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  background-color: #f56c6c;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(245, 108, 108, 0.4);
 }
 
 .mail-item.active::before {

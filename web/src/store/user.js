@@ -3,32 +3,35 @@ import { reactive } from 'vue'
 export const userStore = reactive({
   id: '',
   name: '',
-  sessionId: localStorage.getItem('raven_session_id') || 'default',
-  
+  sessionId: 'default',
+  unreadCount: 0,
+  eventSource: null,
+  fetchUsers: null, // Global user directory helper
+  qiankunActions: null, // Qiankun state actions
+
   setUser(id, name) {
     this.id = id
-    this.name = name || id
-    console.log('[raven-mail] User switched to:', id)
+    this.name = name
   },
 
   setSession(sid) {
-    this.sessionId = sid || 'default'
-    localStorage.setItem('raven_session_id', this.sessionId)
-    console.log('[raven-mail] Session switched to:', this.sessionId)
-    // Refetching might be needed, handled by components watching this
+    this.sessionId = sid
   },
 
-  // 远程搜索函数引用
-  fetchUsers: null,
-  
   setFetchUsers(fn) {
     this.fetchUsers = fn
   },
 
+  setQiankunActions(actions) {
+    this.qiankunActions = actions
+  },
+
+  setUnreadCount(count) {
+    this.unreadCount = count
+    this.notifyHost()
+  },
+
   // SSE Notifications
-  eventSource: null,
-  unreadCount: 0,
-  
   initNotifications() {
     if (this.eventSource) return;
     
@@ -64,10 +67,20 @@ export const userStore = reactive({
   },
 
   notifyHost() {
-    // Notify host via custom event or qiankun state
+    console.log(`[raven-mail] Notifying host, unreadCount: ${this.unreadCount}`)
+    
+    // 1. Standalone / Legacy way: CustomEvent
     const event = new CustomEvent('raven-new-mail', { 
         detail: { unreadCount: this.unreadCount, userId: this.id } 
     });
     window.dispatchEvent(event);
+
+    // 2. Standard way: Qiankun state
+    if (this.qiankunActions && this.qiankunActions.setGlobalState) {
+        this.qiankunActions.setGlobalState({
+            unreadCount: this.unreadCount,
+            lastUser: this.id
+        });
+    }
   }
 })

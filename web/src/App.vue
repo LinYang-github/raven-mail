@@ -80,6 +80,15 @@ const fetchMails = async () => {
       : await getSent(1, searchQuery.value)
     mails.value = res.data.data || []
     
+    // 如果是收件箱，统计未读数并回传主应用
+    if (currentView.value === 'inbox') {
+      const unread = mails.value.filter(m => {
+        const r = m.recipients?.find(rp => rp.recipient_id === userStore.id)
+        return r && r.status === 'unread'
+      }).length
+      userStore.setUnreadCount(unread)
+    }
+
     // Auto-select logic if needed, but current logic is fine
     if (!isComposing.value && selectedMail.value && !mails.value.find(m => m.id === selectedMail.value.id)) {
       selectedMail.value = null
@@ -122,6 +131,14 @@ const handleDelete = async (id) => {
 }
 
 const selectMail = async (mail) => {
+  // 如果点击的是未读邮件，前端立即减少未读数并通知主应用（优化体验）
+  const r = mail.recipients?.find(rp => rp.recipient_id === userStore.id)
+  if (r && r.status === 'unread' && currentView.value === 'inbox') {
+    userStore.setUnreadCount(Math.max(0, userStore.unreadCount - 1))
+    // 手动更新本地对象状态，避免列表刷新前显示还是未读
+    r.status = 'read'
+  }
+
   isComposing.value = false
   selectedMail.value = mail // Optimistic UI
   // Mark as read or fetch full details if needed

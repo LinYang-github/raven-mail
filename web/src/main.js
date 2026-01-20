@@ -42,6 +42,9 @@ renderWithQiankun({
       userStore.setSession(props.sessionId)
     }
 
+    // Capture qiankun actions/props
+    userStore.setQiankunActions(props)
+    
     // Capture fetchUsers function
     if (props.fetchUsers) {
       userStore.setFetchUsers(props.fetchUsers)
