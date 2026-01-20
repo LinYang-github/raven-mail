@@ -124,9 +124,13 @@ func (s *MailService) ReadMail(ctx context.Context, sessionID, userID, mailID st
 		return nil, err
 	}
 
-	// Update status to read if it's the recipient
-	// Note: Logic could be optimized to check if already read
-	_ = s.repo.UpdateStatus(ctx, mailID, userID, "read")
+	// 如果当前查看者是收件人之一，且状态还是 unread，则更新为 read
+	for _, r := range mail.Recipients {
+		if r.RecipientID == userID && r.Status == "unread" {
+			_ = s.repo.UpdateStatus(ctx, mailID, userID, "read")
+			break
+		}
+	}
 
 	return mail, nil
 }

@@ -16,6 +16,27 @@
           <div class="info-text">
             <div class="sender-name">{{ mail.sender_id }}</div>
             <div class="recipients">收件人: {{ mail.recipients?.map(r => r.recipient_id).join(', ') }}</div>
+            
+            <!-- 深度追踪：发件人可见 -->
+            <div v-if="mail.sender_id === userStore.id" class="tracking-summary">
+              <span class="tracking-title">阅办情况：</span>
+              <el-popover placement="bottom" :width="300" trigger="hover">
+                <template #reference>
+                  <span class="tracking-stats">
+                    {{ readCount }} / {{ mail.recipients?.length }} 已读
+                  </span>
+                </template>
+                <div class="recipient-status-list">
+                  <div v-for="r in mail.recipients" :key="r.id" class="recipient-row">
+                    <span class="r-name">{{ r.recipient_id }}</span>
+                    <el-tag :type="r.status === 'read' ? 'success' : 'info'" size="small">
+                      {{ r.status === 'read' ? '已读' : '未读' }}
+                    </el-tag>
+                    <span v-if="r.read_at" class="r-time">{{ formatDate(r.read_at) }}</span>
+                  </div>
+                </div>
+              </el-popover>
+            </div>
           </div>
         </div>
       </div>
@@ -60,13 +81,18 @@
     </div>
   </div>
 </template>
-
 <script setup>
+import { reactive, ref, onMounted, watch, onBeforeUnmount, computed } from 'vue'
 import { getDownloadUrl, getPreviewUrl } from '../services/api'
 import { getPreviewDriver } from './content'
+import { userStore } from '../store/user'
 import { Paperclip, Document, Download, View } from '@element-plus/icons-vue'
 
-defineProps(['mail'])
+const props = defineProps(['mail'])
+
+const readCount = computed(() => {
+  return props.mail?.recipients?.filter(r => r.status === 'read').length || 0
+})
 
 const canPreview = (att) => {
   const type = att.mime_type || ''
@@ -162,6 +188,54 @@ const formatDate = (dateStr) => {
   font-size: 13px;
   color: #909399;
   margin-top: 2px;
+}
+
+.tracking-summary {
+  margin-top: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+
+.tracking-title {
+  color: #909399;
+}
+
+.tracking-stats {
+  color: #409EFF;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+}
+
+.recipient-status-list {
+  padding: 8px 0;
+}
+
+.recipient-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f2f5;
+  gap: 12px;
+}
+
+.recipient-row:last-child {
+  border-bottom: none;
+}
+
+.r-name {
+  font-weight: 500;
+  color: #303133;
+  min-width: 60px;
+}
+
+.r-time {
+  font-size: 11px;
+  color: #909399;
+  font-family: monospace;
 }
 
 .detail-body {

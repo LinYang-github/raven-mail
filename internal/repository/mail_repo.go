@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"raven/internal/core/domain"
 
@@ -81,9 +82,13 @@ func (r *MailRepository) GetSent(ctx context.Context, sessionID, senderID string
 }
 
 func (r *MailRepository) UpdateStatus(ctx context.Context, mailID, recipientID, status string) error {
+	updates := map[string]interface{}{"status": status}
+	if status == "read" {
+		updates["read_at"] = time.Now()
+	}
 	return r.db.WithContext(ctx).Model(&domain.MailRecipient{}).
 		Where("mail_id = ? AND recipient_id = ?", mailID, recipientID).
-		Update("status", status).Error
+		Updates(updates).Error
 }
 
 func (r *MailRepository) DeleteForSender(ctx context.Context, mailID string) error {
