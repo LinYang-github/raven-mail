@@ -14,11 +14,53 @@
       <el-form :model="form" ref="formRef" label-position="top" class="main-form">
         <div class="form-row">
           <el-form-item label="收件人" class="flex-item">
-            <el-input v-model="form.to" placeholder="用户ID, 逗号分隔" />
+            <el-select
+              v-model="form.toList"
+              multiple
+              filterable
+              remote
+              reserve-keyword
+              placeholder="搜索并选择收件人"
+              :remote-method="searchToUsers"
+              :loading="searchLoading"
+              style="width: 100%"
+              @focus="() => searchToUsers('')"
+            >
+              <el-option
+                v-for="item in toUserOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              >
+                <span style="float: left">{{ item.name }}</span>
+                <span style="float: right; color: #8492a6; font-size: 13px">{{ item.dept }}</span>
+              </el-option>
+            </el-select>
           </el-form-item>
           
           <el-form-item label="抄送" class="flex-item">
-            <el-input v-model="form.cc" placeholder="可选" />
+            <el-select
+              v-model="form.ccList"
+              multiple
+              filterable
+              remote
+              reserve-keyword
+              placeholder="可选"
+              :remote-method="searchCcUsers"
+              :loading="searchLoading"
+              style="width: 100%"
+              @focus="() => searchCcUsers('')"
+            >
+              <el-option
+                v-for="item in ccUserOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              >
+                <span style="float: left">{{ item.name }}</span>
+                <span style="float: right; color: #8492a6; font-size: 13px">{{ item.dept }}</span>
+              </el-option>
+            </el-select>
           </el-form-item>
         </div>
         
@@ -56,24 +98,61 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { sendMail } from '../services/api'
+import { userStore } from '../store/user'
 import { ElMessage } from 'element-plus'
 import { Paperclip, Promotion } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['cancel', 'success'])
 
 const loading = ref(false)
+const searchLoading = ref(false)
+const toUserOptions = ref([])
+const ccUserOptions = ref([])
 const fileList = ref([])
+
 const form = reactive({
-  to: '',
-  cc: '',
+  toList: [],
+  ccList: [],
   subject: '',
   content: ''
 })
 
+const fetchDefaultOptions = async () => {
+  if (userStore.fetchUsers) {
+    const results = await userStore.fetchUsers('')
+    toUserOptions.value = results
+    ccUserOptions.value = results
+  }
+}
+
+onMounted(() => {
+  fetchDefaultOptions()
+})
+
+const searchToUsers = async (query) => {
+  searchLoading.value = true
+  try {
+    const results = userStore.fetchUsers ? await userStore.fetchUsers(query) : []
+    toUserOptions.value = results
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+const searchCcUsers = async (query) => {
+  searchLoading.value = true
+  try {
+    const results = userStore.fetchUsers ? await userStore.fetchUsers(query) : []
+    ccUserOptions.value = results
+  } finally {
+    searchLoading.value = false
+  }
+}
+
 const handleSubmit = async () => {
-  if (!form.to || !form.subject || !form.content) {
+  if (form.toList.length === 0 || !form.subject || !form.content) {
     ElMessage.warning('请填写必要字段')
     return
   }
@@ -81,8 +160,8 @@ const handleSubmit = async () => {
   loading.value = true
   try {
     const formData = new FormData()
-    formData.append('to', form.to)
-    formData.append('cc', form.cc)
+    formData.append('to', form.toList.join(','))
+    formData.append('cc', form.ccList.join(','))
     formData.append('subject', form.subject)
     formData.append('content', form.content)
     

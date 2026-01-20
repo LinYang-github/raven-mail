@@ -39,6 +39,11 @@ renderWithQiankun({
       userStore.setUser(props.user.id || 'user-123', props.user.name)
     }
 
+    // Capture fetchUsers function
+    if (props.fetchUsers) {
+      userStore.setFetchUsers(props.fetchUsers)
+    }
+
     // Sync state changes
     if (props.onGlobalStateChange) {
       props.onGlobalStateChange((state, prev) => {

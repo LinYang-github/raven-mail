@@ -22,7 +22,27 @@ const apps = [
     activeRule: '/mail', // 激活路由
     props: {
         token: 'demo-host-token-xyz',
-        user: state.user // Initial prop
+        user: state.user, // Initial prop
+        // 方案 1: 注入用户搜索函数 (模拟业务系统接口)
+        fetchUsers: async (query) => {
+            console.log('[host] fetchUsers called with:', query);
+            const allUsers = [
+                { id: 'user-123', name: 'User A', dept: '研发部' },
+                { id: 'user-456', name: 'User B', dept: '设计部' },
+                { id: 'admin', name: '系统管理员', dept: '管理层' },
+                { id: 'zhangsan', name: '张三', dept: '财务部' },
+                { id: 'lisi', name: '李四', dept: '市场部' },
+            ];
+            // 简单模拟搜索过滤
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const filtered = query 
+                        ? allUsers.filter(u => u.name.includes(query) || u.id.includes(query))
+                        : allUsers; // 返回全部
+                    resolve(filtered);
+                }, 300); // 模拟网络延迟
+            });
+        }
     }
   },
 ];
