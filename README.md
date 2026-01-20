@@ -18,8 +18,9 @@ Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模
   - 记录精确的首次回执（阅读）时间。
 - **微前端深度集成**：
   - **统一寻址 (Deep Linking)**：支持微前端路由同步，支持通过 URL 直接定位文电。
+  - **模块动态编排 (Dynamic Modules)**：宿主应用可通过 Props 动态启停“文电管理”或“即时通讯”模块，无需修改子应用代码。
   - **环境自适应 (Theming)**：支持从宿主应用动态注入主题色和 UI 配置。
-  - **状态双向同步**：未读计数动态回传主应用侧边栏徽标。
+  - **状态双向同步**：未读计数动态回传主应用侧边栏徽标；全局状态（场次、用户）实时下发。
 - **演练场次管理**：
   - 支持多场次数据物理隔离。
   - 提供“一键重置场次”功能，快速清理演练环境。
@@ -36,7 +37,7 @@ Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模
 
 ### 前端 (Frontend)
 - **框架**: Vue 3 (Composition API)
-- **路由**: Vue Router 4 (微前端基准路径适配)
+- **路由**: Vue Router 4 (支持动态 Route Base)
 - **UI 组件库**: Element Plus
 - **富文本引擎**: wangEditor
 - **微前端方案**: Qiankun (via `vite-plugin-qiankun`)
@@ -47,10 +48,10 @@ Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模
 /
 ├── cmd/                # 后端入口
 ├── internal/           # 内部核心逻辑 (Domain, Service, Repo, Handler)
-├── web/                # Vue 3 前端源码
+├── web/                # Vue 3 前端源码 (子应用)
 ├── doc/                # 额外文档 (ONLYOFFICE 部署等)
 ├── examples/           # 示例应用
-│   └── qiankun-demo/   # qiankun 宿主应用示例
+│   └── qiankun-demo/   # Qiankun 宿主应用 (支持动态模块配置)
 ├── uploads/            # 附件及文档物理存储 (按 session_id 隔离)
 └── raven.db            # SQLite 数据库文件
 ```
@@ -92,6 +93,8 @@ go run cmd/server/main.go
 ```
 
 ### 3. 运行微前端 Demo (宿主+子应用)
+本 Demo 展示了如何在宿主应用中动态加载 Raven 模块，并控制功能开关。
+
 1. 启动前端子应用：
    ```bash
    cd web && npm install && npm run dev
@@ -100,7 +103,10 @@ go run cmd/server/main.go
    ```bash
    cd examples/qiankun-demo && npm install && npm run dev
    ```
-3. 访问宿主地址，体验**主题切换、用户切换、场次重置**以及**路由同步**等深度集成功能。
+3. 访问宿主地址 (http://localhost:3000)，体验以下特性：
+   - **动态模块**：勾选“文电管理”或“即时通讯”复选框，实时加载/卸载功能。
+   - **统一寻址**：所有功能均挂载在 `/app` 路径下，保持入口统一。
+   - **深度集成**：体验主题切换、用户切换、场次重置以及路由同步。
 
 ## 📄 许可证
 MIT License

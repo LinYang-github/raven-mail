@@ -39,21 +39,29 @@ Raven 支持三种层级的正文编辑，通过驱动分发模式（Driver Patt
 - **ForceSave 策略**：文电发送前触发后端向 ONLYOFFICE 发送推送请求，强制文档同步到物理磁盘，确保发送的内容是最新版本。
 - **缓存规避**：docKey 动态生成并包含 `session_id` 标识，防止不同演练环境下的文档缓存串线。
 
-## 4. 微前端深度集成
+## 4. 微前端集成模式 (Integration Pattern)
 
-### 4.1 统一寻址与路由同步 (Deep Linking)
-- **基准适配**：子应用在 `mount` 时探测 `window.__POWERED_BY_QIANKUN__`，动态调整 `base` 路径。
-- **URL 映射**：子应用内部路由（如 `/inbox/:id`）直接透传至主应用地址栏，实现收藏夹支持和回退支持。
+Raven 采用了更为先进的 **"Props-Driven"** 集成模式，而非传统的基于 URL 耦合的路由拆分模式。这使得 Raven 可以作为一个完整的原子能力嵌入到宿主的任意位置。
 
-### 4.2 环境自适应 (Theming & Config)
+### 4.1 动态模块编排 (Module Orchestration)
+- **解耦设计**：子应用不再关心自己是“邮件系统”还是“IM系统”，它只负责提供能力集。
+- **Props 驱动**：宿主通过 Qiankun Props 下发 `modules: ['mail', 'im']` 配置。
+- **响应式更新**：子应用内部监听 GlobalState 变化，实时挂载或卸载 `MailClient` 和 `ChatWidget` 组件，无需重新加载子应用。
+
+### 4.2 动态路由基准 (Dynamic Route Base)
+- **Factory Pattern**：路由实例不再是单例，而是通过 `createRouterInstance()` 工厂函数创建。
+- **Runtime Injection**：在 `mount` 生命周期中，子应用读取宿主注入的 `window.__RAVEN_ROUTE_BASE__`，从而动态生成适配当前挂载点（如 `/app`, `/oa/mail`, `/dashboard/widget`）的路由实例。
+- **统一寻址**：无论挂载在哪里，子应用内部路由始终保持标准结构（`/inbox`, `/compose`），大大简化了维护成本。
+
+### 4.3 环境自适应 (Theming & Config)
 - **CSS 变量分发**：子应用通过 `ravenConfig` 接收主应用指定的 `primaryColor`，并利用 CSS Variables 实现在线换肤。
 - **功能开关**：主应用可以通过配置动态控制子应用侧边栏的显示/隐藏（`showSidebar`）。
 
-### 4.3 未读数回传机制 (State Sync)
-- **SSE 监听**：后端通过 Server-Sent Events 实现新邮件实时推送。
-- **状态推送到主应用**：子应用计算真实未读数后，通过以下两种方式回传：
-  1. `actions.setGlobalState({ unreadCount: X })` (Qiankun 标准)。
-  2. 自定义事件 `CustomEvent('raven-new-mail')` (解耦/老版本兼容)。
+### 4.4 状态同步与通信 (State Sync)
+- **双向数据流**：
+  - **Downstream (Host -> App)**：用户、场次、主题色、功能模块配置通过 Qiankun GlobalState 实时下发。
+  - **Upstream (App -> Host)**：未读数（邮件+IM）通过 `setGlobalState` 实时回传给宿主用于展示徽标。
+- **SSE 统一推送**：后端 SSE 通道同时承载邮件通知和 IM 消息，前端解析后分发给不同的 Store 模块。
 
 ## 5. 数据模型与 API 规范
 
