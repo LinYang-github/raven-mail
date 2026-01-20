@@ -37,8 +37,10 @@ const handleInput = () => {
 
 <style scoped>
 .rich-editor-placeholder {
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: none;
 }
 .toolbar {
   padding: 8px;
@@ -51,5 +53,15 @@ const handleInput = () => {
 .mode-tag {
   font-size: 12px;
   color: #909399;
+}
+:deep(.el-textarea__inner) {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+}
+:deep(.el-textarea) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 </style>

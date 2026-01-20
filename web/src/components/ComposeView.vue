@@ -69,7 +69,34 @@
         </el-form-item>
 
         <el-form-item label="正文">
-          <EditorDriver v-model="form.content" :mailId="null" />
+          <div class="editor-wrapper" :class="{ 'is-fullscreen': isFullScreen }">
+            <div class="editor-toolbar">
+              <span v-if="isFullScreen" class="fullscreen-title">
+                正在编辑：{{ form.subject || '（未命名主题）' }}
+              </span>
+              <div class="toolbar-actions">
+                <el-button 
+                  v-if="isFullScreen"
+                  type="success" 
+                  size="small" 
+                  :icon="Promotion"
+                  @click="handleSubmit"
+                  class="toolbar-send-btn"
+                >
+                  发送文电
+                </el-button>
+                <el-button 
+                  type="primary" 
+                  link 
+                  :icon="isFullScreen ? Aim : FullScreen"
+                  @click="isFullScreen = !isFullScreen"
+                >
+                  {{ isFullScreen ? '退出全屏' : '全屏编辑' }}
+                </el-button>
+              </div>
+            </div>
+            <EditorDriver v-model="form.content" :mailId="null" class="dynamic-editor" />
+          </div>
         </el-form-item>
         
         <el-form-item label="附件">
@@ -92,14 +119,42 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { sendMail } from '../services/api'
 import { userStore } from '../store/user'
 import { EditorDriver } from './content'
 import { ElMessage } from 'element-plus'
-import { Paperclip, Promotion } from '@element-plus/icons-vue'
+import { Paperclip, Promotion, FullScreen, Aim } from '@element-plus/icons-vue'
 
+const isFullScreen = ref(false)
 const emit = defineEmits(['cancel', 'success'])
+
+// 全屏状态监听：锁定滚动 & 触发编辑器重绘
+watch(isFullScreen, (val) => {
+  if (val) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+  // 触发 window resize 让 ONLYOFFICE 等编辑器自适应
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'))
+  }, 100)
+})
+
+// Esc 退出全屏
+const handleEsc = (e) => {
+  if (e.key === 'Escape' && isFullScreen.value) {
+    isFullScreen.value = false
+  }
+}
+onMounted(() => {
+  window.addEventListener('keydown', handleEsc)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleEsc)
+  document.body.style.overflow = ''
+})
 
 const loading = ref(false)
 const searchLoading = ref(false)
@@ -274,7 +329,62 @@ const handleSubmit = async () => {
   border-top: 1px solid #f0f0f0;
 }
 
+.editor-wrapper {
+  width: 100%;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  height: 650px; /* 从 min-height 改为固定 height，确保子组件 100% 有效 */
+}
+
+.editor-wrapper.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 3000;
+  border-radius: 0;
+  padding: 0; /* 充满整个屏幕 */
+}
+
+.editor-toolbar {
+  padding: 8px 16px;
+  background: #f8f9fb;
+  border-bottom: 1px solid #dcdfe6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fullscreen-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dynamic-editor {
+  flex: 1;
+  height: 100%; /* 强制占满剩余空间 */
+  overflow: hidden;
+}
+
+:deep(.el-form-item__content) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
 :deep(.el-form-item) {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 </style>

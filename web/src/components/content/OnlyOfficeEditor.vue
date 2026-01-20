@@ -105,14 +105,17 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .onlyoffice-editor {
-  height: 600px;
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   position: relative;
-  border: 1px solid #dcdfe6;
+  overflow: hidden;
 }
 .editor-container {
-  height: 100%;
+  flex: 1;
   width: 100%;
+  height: 100%; /* DocsAPI 强依赖此属性完成 Iframe 初始化 */
 }
 .loading-overlay {
   position: absolute;

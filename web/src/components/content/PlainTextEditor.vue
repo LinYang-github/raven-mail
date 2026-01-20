@@ -24,3 +24,14 @@ const handleInput = () => {
   emit('update:modelValue', content.value)
 }
 </script>
+
+<style scoped>
+:deep(.el-textarea__inner) {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+:deep(.el-textarea) {
+  height: 100%;
+}
+</style>
