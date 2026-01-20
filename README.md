@@ -54,14 +54,29 @@ Raven 是一个基于 Go 和 Vue 3 开发的现代化文电（邮件）管理模
 
 ## ⚙️ 环境配置
 
-本项目前端（`/web`）通过环境变量控制核心功能逻辑（如正文编辑模式和 API 地址）。
+本项目通过环境变量和命令行参数进行灵活配置。
 
-1. 进入 `web` 目录：`cd web`
-2. 复制模板：`cp .env.example .env`
-3. 根据实际环境修改 `.env` 中的关键变量：
-   - `VITE_MAIL_CONTENT_MODE`: 文电正文模式（`text` / `onlyoffice`）。
-   - `VITE_BACKEND_URL`: 后端 API 地址（集成 ONLYOFFICE 时，此处**严禁**使用 localhost，需填写真实 IP）。
-   - `VITE_ONLYOFFICE_SERVER`: ONLYOFFICE 服务端地址。
+### 1. 前端配置 (`/web`)
+
+在 `web` 目录中利用 `.env` 文件控制功能逻辑：
+1. `cp .env.example .env`
+2. 关键变量说明：
+   - `VITE_MAIL_CONTENT_MODE`: 文电正文模式（`text` / `rich` / `onlyoffice`）。
+   - `VITE_BACKEND_URL`: 后端 API 地址。**生产联调必须填写真实 IP**，例如 `http://192.168.1.10:8080`。
+   - `VITE_ONLYOFFICE_SERVER`: ONLYOFFICE 服务器地址。
+   - **开发端口**：默认为 `5173`，可在 `vite.config.js` 中修改。
+
+### 2. 后端配置 (Go Server)
+
+后端支持参数注入，可在启动时指定端口和外部依赖地址：
+
+```bash
+go run cmd/server/main.go -port 8080 -oo-host 192.168.1.100:8090
+```
+
+- **`-port`**: 服务监听端口（默认 `8080`）。
+- **`-oo-host`**: ONLYOFFICE 服务器地址（此地址用于保存回调校验，默认 `localhost:8090`）。也可以通过环境变量 `ONLYOFFICE_HOST` 设置。
+- **`-default-user`**: 演示模式下的默认模拟用户（默认 `guest`）。
 
 ## 🚀 快速开始
 

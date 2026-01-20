@@ -44,7 +44,7 @@ const viewerId = `onlyoffice-viewer-${Math.random().toString(36).substring(7)}`
 let docEditor = null
 
 const serverUrl = import.meta.env.VITE_ONLYOFFICE_SERVER || 'http://localhost:8090/'
-const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'
+const backendUrl = import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin)
 
 const toggleFullScreen = () => {
   isFullScreen.value = !isFullScreen.value

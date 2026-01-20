@@ -1,6 +1,7 @@
-import { registerMicroApps, start, initGlobalState } from 'qiankun';
+// 初始配置：支持通过 URL 参数或环境变量覆盖地址
+const BACKEND_URL = window.localStorage.getItem('RAVEN_BACKEND_URL') || 'http://localhost:8080';
+const SUBAPP_ENTRY = window.localStorage.getItem('RAVEN_SUBAPP_ENTRY') || '//localhost:5173';
 
-// 初始状态
 const state = {
     user: { name: '红方-01', id: 'user-123', role: 'RED' },
     sessionId: 'default',
@@ -65,7 +66,7 @@ actions.onGlobalStateChange((newState) => {
 const apps = [
   {
     name: 'raven-mail', // 子应用名称
-    entry: '//localhost:5173', // 子应用开发环境地址
+    entry: SUBAPP_ENTRY, // 子应用开发环境地址
     container: '#subapp-container', // 挂载容器 ID
     activeRule: '/mail', // 激活路由
     props: {
@@ -158,7 +159,7 @@ window.resetSession = async () => {
     }
 
     try {
-        const url = `http://localhost:8080/api/v1/sessions/${sid}`;
+        const url = `${BACKEND_URL}/api/v1/sessions/${sid}`;
         const resp = await fetch(url, {
             method: 'DELETE'
         });
