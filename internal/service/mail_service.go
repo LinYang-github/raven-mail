@@ -4,19 +4,46 @@ import (
 	"context"
 	"raven/internal/core/domain"
 	"raven/internal/core/ports"
+	"strings"
 	"time"
 )
 
 type MailService struct {
 	repo    ports.MailRepository
 	storage ports.StorageService
+	// Simple Notification Hub
+	clients map[chan string]bool
+	msgChan chan string
 }
 
 func NewMailService(repo ports.MailRepository, storage ports.StorageService) *MailService {
-	return &MailService{
+	s := &MailService{
 		repo:    repo,
 		storage: storage,
+		clients: make(map[chan string]bool),
+		msgChan: make(chan string),
 	}
+	go s.runHub()
+	return s
+}
+
+func (s *MailService) runHub() {
+	for msg := range s.msgChan {
+		for client := range s.clients {
+			client <- msg
+		}
+	}
+}
+
+func (s *MailService) Subscribe() chan string {
+	c := make(chan string)
+	s.clients[c] = true
+	return c
+}
+
+func (s *MailService) Unsubscribe(c chan string) {
+	delete(s.clients, c)
+	close(c)
 }
 
 func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.SendMailRequest) (*domain.Mail, error) {
@@ -65,6 +92,14 @@ func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.S
 	if err := s.repo.Create(ctx, mail); err != nil {
 		return nil, err
 	}
+
+	// Broadcast notification: target_user_ids
+	var targetIDs []string
+	for _, r := range mail.Recipients {
+		targetIDs = append(targetIDs, r.RecipientID)
+	}
+	// Format: NEW_MAIL:comma_separated_ids
+	s.msgChan <- "NEW_MAIL:" + strings.Join(targetIDs, ",")
 
 	return mail, nil
 }

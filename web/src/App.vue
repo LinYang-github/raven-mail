@@ -137,9 +137,6 @@ const handleComposeSuccess = () => {
   isComposing.value = false
   if (currentView.value === 'sent') {
     fetchMails()
-  } else {
-    // Maybe switch to sent view? Or just stay in inbox
-    ElMessage.success('已发送')
   }
 }
 

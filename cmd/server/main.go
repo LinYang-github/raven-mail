@@ -70,6 +70,7 @@ func main() {
 			mails.GET("/:id", mailHandler.GetMail)
 			mails.DELETE("/:id", mailHandler.DeleteMail)
 			mails.GET("/download", mailHandler.DownloadAttachment)
+			mails.GET("/events", mailHandler.StreamNotifications)
 		}
 	}
 

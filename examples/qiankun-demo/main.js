@@ -2,7 +2,7 @@ import { registerMicroApps, start, initGlobalState } from 'qiankun';
 
 // 初始状态
 const state = {
-    user: { name: 'User A', id: 'user-123', role: 'RED' }
+    user: { name: '红方-01', id: 'user-123', role: 'RED' }
 };
 
 const allUsersInDirectory = [
@@ -70,15 +70,23 @@ start({
     }
 });
 
-// User Switch Logic
+// User Switch Logic - 保持与通讯录一致
 const userMap = {
-    'user-123': { name: 'User A', role: 'RED' },
-    'user-456': { name: 'User B', role: 'BLUE' },
-    'admin': { name: 'Admin', role: 'WHITE' }
+    'user-123': { name: '红方-01', role: 'RED' },
+    'red-commander': { name: '红方指挥官', role: 'RED' },
+    'user-456': { name: '蓝方-01', role: 'BLUE' },
+    'blue-scout': { name: '蓝方侦察兵', role: 'BLUE' },
+    'admin': { name: '总导演-01', role: 'WHITE' },
+    'observer-01': { name: '第三方观察员', role: 'WHITE' }
 };
 
 const selector = document.getElementById('user-select');
 if (selector) {
+    // 重新生成选择器选项
+    selector.innerHTML = Object.entries(userMap).map(([id, info]) => 
+        `<option value="${id}">${info.name} (${info.role})</option>`
+    ).join('');
+
     selector.addEventListener('change', (e) => {
         const uid = e.target.value;
         const info = userMap[uid];
@@ -98,9 +106,36 @@ const updateNav = () => {
     
     if(path.startsWith('/mail')) {
         document.getElementById('nav-mail').classList.add('active');
+        // 进入邮件模块时清除徽标提示
+        const badge = document.getElementById('mail-badge');
+        if (badge) badge.style.display = 'none';
     }
 };
+
+// 监听子应用发送的新邮件自定义事件
+window.addEventListener('raven-new-mail', (event) => {
+    const { unreadCount, userId } = event.detail;
+    console.log(`[host] New mail for ${userId}, unread: ${unreadCount}`);
+    
+    // 更新侧边栏徽标
+    const badge = document.getElementById('mail-badge');
+    if (badge) {
+        badge.innerText = unreadCount;
+        badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+    }
+    
+    // 桌面通知示例
+    if (Notification.permission === 'granted') {
+        new Notification('新文电通知', {
+            body: `您收到了一封新文电，请及时处理。`,
+            icon: '/favicon.ico'
+        });
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+});
 
 window.addEventListener('popstate', updateNav);
 // 初始运行
 updateNav();
+

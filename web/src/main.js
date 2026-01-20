@@ -44,6 +44,9 @@ renderWithQiankun({
       userStore.setFetchUsers(props.fetchUsers)
     }
 
+    // Start Real-time Notifications
+    userStore.initNotifications()
+
     // Sync state changes
     if (props.onGlobalStateChange) {
       props.onGlobalStateChange((state, prev) => {

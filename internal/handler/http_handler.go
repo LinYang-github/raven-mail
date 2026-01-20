@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"raven/internal/core/ports"
 
@@ -210,4 +211,33 @@ func filterEmpty(s []string) []string {
 		}
 	}
 	return r
+}
+func (h *MailHandler) StreamNotifications(c *gin.Context) {
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("Access-Control-Allow-Origin", "*")
+
+	ch := h.service.Subscribe()
+	defer h.service.Unsubscribe(ch)
+
+	// Ping to keep connection alive
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case msg, ok := <-ch:
+			if !ok {
+				return false
+			}
+			c.SSEvent("message", msg)
+			return true
+		case <-ticker.C:
+			c.SSEvent("ping", "keep-alive")
+			return true
+		case <-c.Request.Context().Done():
+			return false
+		}
+	})
 }

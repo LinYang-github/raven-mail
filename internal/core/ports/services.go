@@ -13,6 +13,9 @@ type MailService interface {
 	ReadMail(ctx context.Context, userID, mailID string) (*domain.Mail, error)
 	DeleteMail(ctx context.Context, userID, mailID string) error
 	GetAttachment(ctx context.Context, attachmentID string) (*domain.Attachment, error)
+	// Notification stream
+	Subscribe() chan string
+	Unsubscribe(chan string)
 }
 
 type StorageService interface {
