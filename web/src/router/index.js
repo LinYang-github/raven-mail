@@ -4,37 +4,42 @@ import { qiankunWindow } from 'vite-plugin-qiankun/dist/helper'
 const routes = [
   {
     path: '/',
-    redirect: '/inbox'
+    redirect: '/mail/inbox' // Default to inbox
   },
   {
-    path: '/inbox',
+    path: '/mail',
+    redirect: '/mail/inbox'
+  },
+  {
+    path: '/mail/inbox',
     name: 'inbox-list',
     component: () => import('../components/EmptyView.vue')
   },
   {
-    path: '/inbox/:id',
+    path: '/mail/inbox/:id',
     name: 'inbox-detail',
     component: () => import('../components/MailDetail.vue')
   },
   {
-    path: '/sent',
+    path: '/mail/sent',
     name: 'sent-list',
     component: () => import('../components/EmptyView.vue')
   },
   {
-    path: '/sent/:id',
+    path: '/mail/sent/:id',
     name: 'sent-detail',
     component: () => import('../components/MailDetail.vue')
   },
   {
-    path: '/compose',
+    path: '/mail/compose',
     name: 'compose',
     component: () => import('../components/ComposeView.vue')
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(qiankunWindow.__POWERED_BY_QIANKUN__ ? '/mail' : '/'),
+  // Always use root base to allow handling both /mail and /im in the same app
+  history: createWebHistory('/'),
   routes
 })
 

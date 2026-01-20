@@ -70,18 +70,26 @@ const apps = [
     name: 'raven-mail', // 子应用名称
     entry: SUBAPP_ENTRY, // 子应用开发环境地址
     container: '#subapp-container', // 挂载容器 ID
-    activeRule: '/mail', // 激活路由
+    activeRule: (location) => {
+        return location.pathname.startsWith('/mail') || location.pathname.startsWith('/im');
+    },
     props: {
         token: 'demo-host-token-xyz',
-        user: state.user,
-        sessionId: state.sessionId,
+        getGlobalState: () => state, // 为了让子应用获取最新状态
+        onGlobalStateChange: (callback, fireImmediately) => actions.onGlobalStateChange(callback, fireImmediately),
         ravenConfig: {
             showReset: true,
-            showSidebar: true,
+            showSidebar: true, // Only for mail
             primaryColor: state.themeColor
         },
         // 关键点：将当前的 role 闭包进去或通过 state 实时获取
-        fetchUsers: (query) => fetchUsersMockByRole(query, state.user)
+        fetchUsers: (query) => fetchUsersMockByRole(query, state.user),
+        // Dynamic modules based on route
+        get modules() {
+            if (window.location.pathname.startsWith('/im')) return ['im'];
+            if (window.location.pathname.startsWith('/mail')) return ['mail', 'im'];
+            return ['mail', 'im'];
+        }
     }
   },
 ];

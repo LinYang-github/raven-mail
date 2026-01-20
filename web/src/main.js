@@ -13,8 +13,8 @@ import { userStore } from './store/user'
 let app = null
 
 function render(props = {}) {
-  const { container } = props
-  app = createApp(App)
+  const { container, modules } = props
+  app = createApp(App, { modules })
   
   app.use(ElementPlus)
   app.use(router)
