@@ -32,6 +32,7 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 	// Multipart form
 	subject := c.PostForm("subject")
 	content := c.PostForm("content")
+	contentType := c.DefaultPostForm("content_type", "text")
 	to := strings.Split(c.PostForm("to"), ",")
 	cc := strings.Split(c.PostForm("cc"), ",")
 	bcc := strings.Split(c.PostForm("bcc"), ",") // Optional
@@ -60,6 +61,7 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 	req := ports.SendMailRequest{
 		Subject:     subject,
 		Content:     content,
+		ContentType: contentType,
 		To:          filterEmpty(to),
 		Cc:          filterEmpty(cc),
 		Bcc:         filterEmpty(bcc),

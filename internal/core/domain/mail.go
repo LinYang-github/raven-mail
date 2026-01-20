@@ -14,6 +14,7 @@ type Mail struct {
 	SenderStatus string         `gorm:"type:varchar(20);default:'normal'" json:"-"` // normal, deleted
 	Subject      string         `gorm:"not null" json:"subject"`
 	Content      string         `gorm:"type:text" json:"content"`
+	ContentType  string         `gorm:"type:varchar(32);default:'text'" json:"content_type"`
 	ParentID     *string        `gorm:"index" json:"parent_id,omitempty"` // For threads/replies
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`

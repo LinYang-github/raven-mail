@@ -26,6 +26,7 @@ type StorageService interface {
 type SendMailRequest struct {
 	Subject     string
 	Content     string
+	ContentType string
 	To          []string // UserIDs
 	Cc          []string
 	Bcc         []string

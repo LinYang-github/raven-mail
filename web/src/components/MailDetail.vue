@@ -21,7 +21,7 @@
       </div>
 
       <div class="detail-body">
-        <pre class="body-text">{{ mail.content }}</pre>
+        <component :is="getPreviewDriver(mail.content_type)" :content="mail.content" />
       </div>
 
       <div v-if="mail.attachments?.length" class="attachments-section">
@@ -63,6 +63,7 @@
 
 <script setup>
 import { getDownloadUrl, getPreviewUrl } from '../services/api'
+import { getPreviewDriver } from './content'
 import { Paperclip, Document, Download, View } from '@element-plus/icons-vue'
 
 defineProps(['mail'])

@@ -66,6 +66,7 @@ func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.S
 		SenderID:    senderID,
 		Subject:     req.Subject,
 		Content:     req.Content,
+		ContentType: req.ContentType,
 		Attachments: attachments,
 		CreatedAt:   time.Now(),
 	}

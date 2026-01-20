@@ -65,20 +65,14 @@
         </div>
         
         <el-form-item label="主题">
-          <el-input v-model="form.subject" placeholder="邮件主题" />
+          <el-input v-model="form.subject" placeholder="请输入主题" />
+        </el-form-item>
+
+        <el-form-item label="正文">
+          <EditorDriver v-model="form.content" :mailId="null" />
         </el-form-item>
         
-        <div class="editor-container">
-          <el-input
-            v-model="form.content"
-            type="textarea"
-            placeholder="在此输入正文..."
-            resize="none"
-            class="content-editor"
-          />
-        </div>
-        
-        <div class="attachment-bar">
+        <el-form-item label="附件">
           <el-upload
             v-model:file-list="fileList"
             action="#"
@@ -91,7 +85,7 @@
               <el-icon><Paperclip /></el-icon> 添加附件
             </el-button>
           </el-upload>
-        </div>
+        </el-form-item>
       </el-form>
     </div>
   </div>
@@ -101,6 +95,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { sendMail } from '../services/api'
 import { userStore } from '../store/user'
+import { EditorDriver } from './content'
 import { ElMessage } from 'element-plus'
 import { Paperclip, Promotion } from '@element-plus/icons-vue'
 
@@ -164,6 +159,7 @@ const handleSubmit = async () => {
     formData.append('cc', form.ccList.join(','))
     formData.append('subject', form.subject)
     formData.append('content', form.content)
+    formData.append('content_type', import.meta.env.VITE_MAIL_CONTENT_MODE || 'text')
     
     fileList.value.forEach(file => {
       formData.append('attachments', file.raw)
