@@ -38,6 +38,14 @@
               </el-popover>
             </div>
           </div>
+          
+          <div class="user-actions">
+            <el-button-group>
+              <el-button size="small" :icon="ArrowLeft" @click="$emit('reply', 'reply')">回复</el-button>
+              <el-button size="small" :icon="Share" @click="$emit('reply', 'reply_all')">回复全部</el-button>
+              <el-button size="small" :icon="ArrowRight" @click="$emit('reply', 'forward')">转发</el-button>
+            </el-button-group>
+          </div>
         </div>
       </div>
 
@@ -86,9 +94,10 @@ import { reactive, ref, onMounted, watch, onBeforeUnmount, computed } from 'vue'
 import { getDownloadUrl, getPreviewUrl } from '../services/api'
 import { getPreviewDriver } from './content'
 import { userStore } from '../store/user'
-import { Paperclip, Document, Download, View } from '@element-plus/icons-vue'
+import { Paperclip, Document, Download, View, ArrowLeft, ArrowRight, Share } from '@element-plus/icons-vue'
 
 const props = defineProps(['mail'])
+defineEmits(['reply'])
 
 const readCount = computed(() => {
   return props.mail?.recipients?.filter(r => r.status === 'read').length || 0

@@ -19,8 +19,10 @@
           <component 
             :is="Component" 
             :mail="selectedMail"
+            :replyTo="replyTarget"
             @cancel="cancelCompose"
             @success="handleComposeSuccess"
+            @reply="handleReply"
           />
         </router-view>
       </div>
@@ -98,12 +100,11 @@ const setView = (view) => {
 }
 
 const openCompose = () => {
+  replyTarget.value = null
   router.push('/compose')
 }
 
-const cancelCompose = () => {
-  router.back()
-}
+// remove duplicate cancelCompose
 
 const fetchMails = async () => {
   loading.value = true
@@ -172,7 +173,24 @@ const selectMail = (mail) => {
   }
 }
 
+const replyTarget = ref(null)
+
+const handleReply = (mode) => {
+  if (!selectedMail.value) return
+  replyTarget.value = {
+    mode: mode, // 'reply', 'reply_all', 'forward'
+    mail: selectedMail.value
+  }
+  router.push('/compose')
+}
+
+const cancelCompose = () => {
+  replyTarget.value = null
+  router.back()
+}
+
 const handleComposeSuccess = () => {
+  replyTarget.value = null
   ElMessage.success('发送成功')
   router.push('/sent')
 }

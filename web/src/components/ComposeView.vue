@@ -156,6 +156,10 @@ onBeforeUnmount(() => {
   document.body.style.overflow = ''
 })
 
+const props = defineProps({
+  replyTo: { type: Object, default: null }, // { mode: 'reply'|'reply_all'|'forward', mail: Object }
+})
+
 const loading = ref(false)
 const searchLoading = ref(false)
 const toUserOptions = ref([])
@@ -166,19 +170,71 @@ const form = reactive({
   toList: [],
   ccList: [],
   subject: '',
-  content: ''
+  content: '',
+  parentId: null
 })
 
 const fetchDefaultOptions = async () => {
   if (userStore.fetchUsers) {
     const results = await userStore.fetchUsers('')
     toUserOptions.value = results
-    ccUserOptions.value = results
+    ccUserOptions.value = results.filter(u => u.id !== userStore.id)
   }
 }
 
-onMounted(() => {
-  fetchDefaultOptions()
+// 引用历史邮件内容
+const generateQuote = (mail) => {
+    const mode = import.meta.env.VITE_MAIL_CONTENT_MODE || 'text'
+    const time = new Date(mail.created_at).toLocaleString()
+
+    if (mode === 'text') {
+        return `\n\n
+------------------ Original ------------------
+From: ${mail.sender_id}
+Sent: ${time}
+Subject: ${mail.subject}
+
+${mail.content}`
+    }
+
+    return `<br/><br/><hr/><p><strong>Original Message:</strong></p>
+    <p><strong>From:</strong> ${mail.sender_id}</p>
+    <p><strong>Sent:</strong> ${time}</p>
+    <p><strong>Subject:</strong> ${mail.subject}</p>
+    <br/>${mail.content}`
+}
+
+onMounted(async () => {
+  await fetchDefaultOptions()
+
+  if (props.replyTo) {
+    const { mode, mail } = props.replyTo
+    form.parentId = mail.id
+    
+    // Auto-fill subject
+    const prefix = mode === 'forward' ? 'Fwd: ' : 'Re: '
+    form.subject = mail.subject.startsWith(prefix) ? mail.subject : prefix + mail.subject
+
+    // Auto-fill recipients
+    if (mode === 'reply') {
+        form.toList = [mail.sender_id]
+    } else if (mode === 'reply_all') {
+        form.toList = [mail.sender_id]
+        // Add existing 'To' recipients to CC, excluding self
+        const recipients = mail.recipients || []
+        const others = recipients
+            .filter(r => r.type === 'to' && r.recipient_id !== userStore.id)
+            .map(r => r.recipient_id)
+        if (others.length > 0) {
+            form.ccList = [...new Set(others)]
+        }
+    }
+    // Forward mode: leaving To/CC empty
+
+    // Quote content (for Text mode primarily, Rich Text handles this via HTML append)
+    form.content = generateQuote(mail)
+    
+  }
 })
 
 const searchToUsers = async (query) => {
@@ -229,6 +285,9 @@ const handleSubmit = async () => {
     formData.append('cc', form.ccList.join(','))
     formData.append('subject', form.subject)
     formData.append('content', form.content)
+    if (form.parentId) {
+        formData.append('parent_id', form.parentId)
+    }
     formData.append('content_type', import.meta.env.VITE_MAIL_CONTENT_MODE || 'text')
     
     fileList.value.forEach(file => {
