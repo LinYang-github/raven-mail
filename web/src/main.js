@@ -31,10 +31,10 @@ function render(props = {}) {
 
 renderWithQiankun({
   bootstrap() {
-    console.log('[raven-mail] bootstrap')
+    console.log('[raven-app] bootstrap')
   },
   mount(props) {
-    console.log('[raven-mail] mount', props)
+    console.log('[raven-app] mount', props)
     
     // Sync initial state
     if (props.routeBase) {
@@ -67,7 +67,7 @@ renderWithQiankun({
     // Sync state changes from host
     if (props.onGlobalStateChange) {
       props.onGlobalStateChange((state, prev) => {
-        console.log('[raven-mail] host state change', state)
+        console.log('[raven-app] host state change', state)
         if (state.user) {
           userStore.setUser(state.user.id, state.user.name)
         }
@@ -86,14 +86,14 @@ renderWithQiankun({
     render(props)
   },
   unmount() {
-    console.log('[raven-mail] unmount')
+    console.log('[raven-app] unmount')
     if (app) {
       app.unmount()
       app = null
     }
   },
   update(props) {
-    console.log('[raven-mail] update')
+    console.log('[raven-app] update')
   }
 })
 

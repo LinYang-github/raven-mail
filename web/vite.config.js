@@ -5,7 +5,7 @@ import qiankun from 'vite-plugin-qiankun'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    qiankun('raven-mail', {
+    qiankun('raven-app', {
       useDevMode: true
     }),
     vue(),
