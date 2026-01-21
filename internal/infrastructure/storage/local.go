@@ -57,6 +57,12 @@ func (s *LocalStorage) GetFile(ctx context.Context, path string) (io.ReadCloser,
 	fullPath := filepath.Join(s.BaseDir, path)
 	return os.Open(fullPath)
 }
+
+func (s *LocalStorage) DeleteFile(ctx context.Context, path string) error {
+	fullPath := filepath.Join(s.BaseDir, path)
+	return os.Remove(fullPath)
+}
+
 func (s *LocalStorage) DeleteSessionDir(ctx context.Context, sessionID string) error {
 	if sessionID == "" {
 		return nil

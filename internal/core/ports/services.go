@@ -44,6 +44,7 @@ type UserSummary struct {
 type StorageService interface {
 	UploadFile(ctx context.Context, sessionID, fileName string, content io.Reader) (string, error)
 	GetFile(ctx context.Context, path string) (io.ReadCloser, error)
+	DeleteFile(ctx context.Context, path string) error
 	DeleteSessionDir(ctx context.Context, sessionID string) error
 }
 

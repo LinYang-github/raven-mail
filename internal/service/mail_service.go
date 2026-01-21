@@ -119,6 +119,10 @@ func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.S
 	mail.Recipients = recipients
 
 	if err := s.repo.Create(ctx, mail); err != nil {
+		// Rollback: Delete uploaded files to prevent orphans
+		for _, att := range attachments {
+			_ = s.storage.DeleteFile(ctx, att.FilePath)
+		}
 		return nil, err
 	}
 
