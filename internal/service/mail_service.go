@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"raven/internal/core/domain"
 	"raven/internal/core/ports"
+	"sync"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type MailService struct {
 	repo    ports.MailRepository
 	storage ports.StorageService
 	// Simple Notification Hub
+	mu      sync.RWMutex
 	clients map[chan string]bool
 	msgChan chan string
 }
@@ -31,21 +33,42 @@ func NewMailService(repo ports.MailRepository, storage ports.StorageService) *Ma
 
 func (s *MailService) runHub() {
 	for msg := range s.msgChan {
+		// Acquire read lock to copy current clients safely
+		s.mu.RLock()
+		targets := make([]chan string, 0, len(s.clients))
 		for client := range s.clients {
-			client <- msg
+			targets = append(targets, client)
+		}
+		s.mu.RUnlock()
+
+		// Send outside lock
+		for _, client := range targets {
+			// Non-blocking send in case client is slow (optional, but good for stability)
+			select {
+			case client <- msg:
+			default:
+				// If channel is full, we might drop the message or handle backlog.
+				// For now, dropping prevents hub blocking.
+			}
 		}
 	}
 }
 
 func (s *MailService) Subscribe() chan string {
-	c := make(chan string)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c := make(chan string, 10) // Buffered channel to prevent immediate blocking
 	s.clients[c] = true
 	return c
 }
 
 func (s *MailService) Unsubscribe(c chan string) {
-	delete(s.clients, c)
-	close(c)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.clients[c]; ok {
+		delete(s.clients, c)
+		close(c)
+	}
 }
 
 func (s *MailService) SendMail(ctx context.Context, senderID string, req ports.SendMailRequest) (*domain.Mail, error) {
