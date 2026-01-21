@@ -99,12 +99,19 @@ renderWithQiankun({
 
 // Standalone initialization
 if (!qiankunWindow.__POWERED_BY_QIANKUN__) {
-  render({
-    fetchUsers: async (query) => {
+  const mockFetchUsers = async (query) => {
         return [
             { id: 'user-999', name: 'Test User', dept: 'Testing' },
             { id: 'user-007', name: 'Bond', dept: 'MI6' }
         ].filter(u => !query || u.name.includes(query) || u.id.includes(query))
-    }
+  }
+  
+  // Important: Set store BEFORE render, or ensure render passes it down?
+  // Current render() doesn't update store. So we do it here.
+  userStore.setFetchUsers(mockFetchUsers)
+  userStore.setUser('guest', 'Guest User') // Ensure "is-me" logic works matches backend default
+  
+  render({
+    fetchUsers: mockFetchUsers
   })
 }
