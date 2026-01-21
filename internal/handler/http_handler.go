@@ -528,3 +528,25 @@ func (h *MailHandler) GetUserSummary(c *gin.Context) {
 
 	c.JSON(http.StatusOK, summary)
 }
+
+func (h *MailHandler) SyncSessions(c *gin.Context) {
+	var req struct {
+		ActiveIDs []string `json:"active_ids"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+
+	count, err := h.service.SyncSessions(c.Request.Context(), req.ActiveIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "sync completed",
+		"deleted_count": count,
+		"status":        "success",
+	})
+}

@@ -100,6 +100,7 @@ func main() {
 		api.POST("/onlyoffice/callback", mailHandler.OnlyOfficeCallback)
 		api.POST("/onlyoffice/forcesave", mailHandler.OnlyOfficeForceSave)
 		api.DELETE("/sessions/:id", mailHandler.DeleteSession)
+		api.POST("/sessions/sync", mailHandler.SyncSessions)
 		api.GET("/user/summary", mailHandler.GetUserSummary)
 	}
 

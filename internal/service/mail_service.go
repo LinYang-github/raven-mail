@@ -250,6 +250,29 @@ func (s *MailService) GetUserSummary(ctx context.Context, sessionID, userID stri
 	}, nil
 }
 
+func (s *MailService) SyncSessions(ctx context.Context, activeSessionIDs []string) (int64, error) {
+	// 1. Get List of Orphans
+	orphans, err := s.repo.GetOrphanSessionIDs(ctx, activeSessionIDs)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(orphans) == 0 {
+		return 0, nil
+	}
+
+	// 2. Iterate and Delete (Reusing existing DeleteSession logic which handles BOTH DB and Files)
+	var deletedCount int64
+	for _, id := range orphans {
+		// Log error but continue
+		if err := s.DeleteSession(ctx, id); err == nil {
+			deletedCount++
+		}
+	}
+
+	return deletedCount, nil
+}
+
 func (s *MailService) broadcast(payload interface{}) {
 	data, err := json.Marshal(payload)
 	if err != nil {

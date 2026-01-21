@@ -25,6 +25,8 @@ type MailService interface {
 
 	// Summary
 	GetUserSummary(ctx context.Context, sessionID, userID string) (*UserSummary, error)
+	// System / Admin
+	SyncSessions(ctx context.Context, activeSessionIDs []string) (int64, error)
 }
 
 type SendChatMessageRequest struct {

@@ -171,3 +171,23 @@ func (r *MailRepository) GetIMUnreadCounts(ctx context.Context, sessionID, userI
 	}
 	return counts, nil
 }
+
+func (r *MailRepository) GetOrphanSessionIDs(ctx context.Context, activeSessionIDs []string) ([]string, error) {
+	var sessionsToDelete []string
+
+	// Query distinct session_ids that are NOT in the active list
+	q := r.db.WithContext(ctx).Model(&domain.Mail{}).Distinct().Pluck("session_id", &sessionsToDelete)
+	if len(activeSessionIDs) > 0 {
+		q = r.db.WithContext(ctx).Model(&domain.Mail{}).Distinct().Where("session_id NOT IN ?", activeSessionIDs).Pluck("session_id", &sessionsToDelete)
+	}
+
+	if q.Error != nil {
+		return nil, q.Error
+	}
+
+	// We might also want to check other tables in case there are sessions with only ChatMessages but no Mails
+	// For simplicity in this MVP, we assume a valid session usually has Mails or is created with Mails.
+	// If needed, we could UNION with ChatMessage session_ids.
+
+	return sessionsToDelete, nil
+}

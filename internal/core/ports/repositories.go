@@ -22,4 +22,6 @@ type MailRepository interface {
 	// Summary / Initialization
 	GetUnreadMailCount(ctx context.Context, sessionID, userID string) (int64, error)
 	GetIMUnreadCounts(ctx context.Context, sessionID, userID string) (map[string]int, error)
+	// System / Admin
+	GetOrphanSessionIDs(ctx context.Context, activeSessionIDs []string) ([]string, error)
 }
