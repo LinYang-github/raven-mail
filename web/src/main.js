@@ -99,5 +99,12 @@ renderWithQiankun({
 
 // Standalone initialization
 if (!qiankunWindow.__POWERED_BY_QIANKUN__) {
-  render()
+  render({
+    fetchUsers: async (query) => {
+        return [
+            { id: 'user-999', name: 'Test User', dept: 'Testing' },
+            { id: 'user-007', name: 'Bond', dept: 'MI6' }
+        ].filter(u => !query || u.name.includes(query) || u.id.includes(query))
+    }
+  })
 }
