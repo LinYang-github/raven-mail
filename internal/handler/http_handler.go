@@ -81,7 +81,6 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 		Attachments: attachmentReqs,
 	}
 
-	// Mock Sender ID (In real app, get from Context/Token)
 	senderID := c.Query("user_id") // Temporary for simulation
 	if senderID == "" {
 		senderID = h.DefaultSenderID
@@ -89,7 +88,7 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 
 	mail, err := h.service.SendMail(c.Request.Context(), senderID, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -109,7 +108,7 @@ func (h *MailHandler) GetInbox(c *gin.Context) {
 
 	mails, total, err := h.service.GetInbox(c.Request.Context(), sessionID, userID, page, pageSize, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -129,7 +128,7 @@ func (h *MailHandler) GetSent(c *gin.Context) {
 
 	mails, total, err := h.service.GetSent(c.Request.Context(), sessionID, userID, page, pageSize, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -145,7 +144,7 @@ func (h *MailHandler) DeleteMail(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteMail(c.Request.Context(), sessionID, userID, id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -162,7 +161,7 @@ func (h *MailHandler) GetMail(c *gin.Context) {
 
 	mail, err := h.service.ReadMail(c.Request.Context(), sessionID, userID, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, mail)
@@ -366,9 +365,10 @@ func (h *MailHandler) DeleteSession(c *gin.Context) {
 
 	// Removed safety check for 'default' session deletion.
 	// The service layer is now responsible for handling the deletion of any session ID, including 'default'.
+	// See MailService.DeleteSession for details.
 
 	if err := h.service.DeleteSession(c.Request.Context(), sessionID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -452,7 +452,7 @@ func (h *MailHandler) SendChatMessage(c *gin.Context) {
 
 	msg, err := h.service.SendChatMessage(c.Request.Context(), senderID, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -478,7 +478,7 @@ func (h *MailHandler) GetChatHistory(c *gin.Context) {
 
 	msgs, err := h.service.GetChatHistory(c.Request.Context(), sessionID, userID, otherID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -503,7 +503,7 @@ func (h *MailHandler) MarkChatAsRead(c *gin.Context) {
 	}
 
 	if err := h.service.MarkChatAsRead(c.Request.Context(), sessionID, senderID, receiverID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -522,7 +522,7 @@ func (h *MailHandler) GetUserSummary(c *gin.Context) {
 
 	summary, err := h.service.GetUserSummary(c.Request.Context(), sessionID, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -540,7 +540,7 @@ func (h *MailHandler) SyncSessions(c *gin.Context) {
 
 	count, err := h.service.SyncSessions(c.Request.Context(), req.ActiveIDs)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.respondError(c, err)
 		return
 	}
 
@@ -549,4 +549,35 @@ func (h *MailHandler) SyncSessions(c *gin.Context) {
 		"deleted_count": count,
 		"status":        "success",
 	})
+}
+
+func (h *MailHandler) respondError(c *gin.Context, err error) {
+	if appErr, ok := err.(*ports.AppError); ok {
+		var status int
+		switch appErr.Type {
+		case ports.ErrorTypeNotFound:
+			status = http.StatusNotFound
+		case ports.ErrorTypeInvalidInput:
+			status = http.StatusBadRequest
+		case ports.ErrorTypeUnauthorized:
+			status = http.StatusUnauthorized
+		case ports.ErrorTypeForbidden:
+			status = http.StatusForbidden
+		default:
+			status = http.StatusInternalServerError
+		}
+
+		// Log detailed error internally
+		fmt.Printf("[AppError] %v\n", appErr)
+
+		c.JSON(status, gin.H{
+			"error": appErr.Message,
+			"code":  appErr.Type,
+		})
+		return
+	}
+
+	// Default fallback
+	fmt.Printf("[InternalError] %v\n", err)
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 }
